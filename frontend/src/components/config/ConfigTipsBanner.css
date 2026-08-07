@@ -1,0 +1,162 @@
+/* ==========================================
+   配置侧栏横版 banner（收藏夹上方）
+   按时段问候 · 主次分明 · 无叠层装饰
+   ========================================== */
+
+.config-tips-banner {
+  margin: 0 0.125rem 0.2rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- 卡片：单层浅渐变，按时段换主色 ---------- */
+.config-tips-banner-card {
+  --gb-ink: var(--cfg-label, #1d1d1f);
+  --gb-muted: var(--cfg-label-2, rgb(60 60 67 / 72%));
+  --gb-a: #60a5fa;
+  --gb-radius: 0.85rem;
+
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--gb-radius);
+  border: 1px solid
+    color-mix(in srgb, var(--gb-a) 18%, var(--cfg-subtle-border, rgb(0 0 0 / 8%)));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--gb-a) 12%, transparent) 0%,
+      transparent 70%
+    ),
+    var(--cfg-subtle-bg, rgb(255 255 255 / 42%));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.config-tips-banner-card[data-period='morning'] {
+  --gb-a: #fb923c;
+}
+
+.config-tips-banner-card[data-period='forenoon'] {
+  --gb-a: #fbbf24;
+}
+
+.config-tips-banner-card[data-period='noon'] {
+  --gb-a: #38bdf8;
+}
+
+.config-tips-banner-card[data-period='afternoon'] {
+  --gb-a: #60a5fa;
+}
+
+.config-tips-banner-card[data-period='dusk'] {
+  --gb-a: #f97316;
+}
+
+.config-tips-banner-card[data-period='evening'] {
+  --gb-a: #818cf8;
+}
+
+.config-tips-banner-card[data-period='night'] {
+  --gb-a: #6366f1;
+}
+
+html.dark .config-tips-banner-card {
+  border-color: color-mix(in srgb, var(--gb-a) 22%, rgb(255 255 255 / 8%));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--gb-a) 16%, transparent) 0%,
+      transparent 70%
+    ),
+    var(--cfg-subtle-bg, rgb(255 255 255 / 6%));
+}
+
+/* ---------- 内容：左图标 + 右文案 ---------- */
+.config-tips-banner-body .gb {
+  padding: 0.7rem 0.75rem;
+}
+
+.config-tips-banner-body .gb-main {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.config-tips-banner-body .gb-icon {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  user-select: none;
+}
+
+.config-tips-banner-body .gb-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* 主：问候 */
+.config-tips-banner-body .gb-hello {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  color: var(--gb-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 次：上次登录 */
+.config-tips-banner-body .gb-meta {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--gb-muted);
+}
+
+.config-tips-banner-body .gb-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.config-tips-banner-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (width < 1024px) {
+  .config-tips-banner {
+    margin: 0 0 0.4rem;
+  }
+
+  .config-tips-banner-body .gb {
+    padding: 0.75rem 0.8rem;
+  }
+
+  .config-tips-banner-body .gb-hello {
+    font-size: 1rem;
+  }
+
+  .config-tips-banner-body .gb-icon {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+}

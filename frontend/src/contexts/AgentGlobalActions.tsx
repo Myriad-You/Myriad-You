@@ -1,0 +1,683 @@
+/**
+ * Agent 全局动作处理器
+ *
+ * 功能：
+ * - 处理 Agent 发起的路由导航 (navigate)
+ * - 处理 Agent 发起的页面元素交互 (page_interact)
+ *
+ * 这个组件必须放在 BrowserRouter 内部，以便使用 useNavigate hook
+ */
+
+import type { FrontendAction, PageElementTarget } from '../services/agent'
+import { useCallback, useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import {
+  registerActionHandler,
+  unregisterActionHandler,
+} from '../services/agent'
+import { useMusicPlayerControl } from './MusicPlayerContext'
+
+/**
+ * 查找页面元素
+ * 支持多种选择器方式
+ */
+function findElement(target: PageElementTarget): HTMLElement | null {
+  // 1. 使用 data-testid
+  if (target.testId) {
+    const el = document.querySelector(
+      `[data-testid="${CSS.escape(target.testId)}"]`,
+    )
+    if (el) return el as HTMLElement
+  }
+
+  // 2. 使用 CSS 选择器
+  if (target.selector) {
+    try {
+      const el = document.querySelector(target.selector)
+      if (el) return el as HTMLElement
+    } catch {
+      return null
+    }
+  }
+
+  // 3. 使用 aria-label
+  if (target.ariaLabel) {
+    const el = document.querySelector(
+      `[aria-label="${CSS.escape(target.ariaLabel)}"]`,
+    )
+    if (el) return el as HTMLElement
+  }
+
+  // 4. 使用 role + 可选的 text
+  if (target.role) {
+    const elements = document.querySelectorAll(
+      `[role="${CSS.escape(target.role)}"]`,
+    )
+    if (target.text) {
+      // 按文本内容过滤
+      for (const el of elements) {
+        if (el.textContent?.includes(target.text)) {
+          return el as HTMLElement
+        }
+      }
+    } else if (typeof target.index === 'number') {
+      // 按索引选择
+      return elements[target.index] as HTMLElement
+    } else if (elements.length > 0) {
+      return elements[0] as HTMLElement
+    }
+  }
+
+  // 5. 仅使用文本内容查找
+  if (target.text && !target.role) {
+    // 尝试查找按钮、链接等可交互元素
+    const interactiveElements = document.querySelectorAll(
+      'button, a, [role="button"], [role="link"], [role="tab"], [role="menuitem"]',
+    )
+    for (const el of interactiveElements) {
+      if (el.textContent?.includes(target.text)) {
+        return el as HTMLElement
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * 等待元素出现
+ */
+async function waitForElement(
+  target: PageElementTarget,
+  timeout = 5000,
+): Promise<HTMLElement | null> {
+  const startTime = Date.now()
+
+  while (Date.now() - startTime < timeout) {
+    const el = findElement(target)
+    if (el) return el
+
+    // 等待 100ms 后重试
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+
+  return null
+}
+
+/**
+ * 执行元素交互
+ */
+async function executeInteraction(
+  element: HTMLElement,
+  action: string,
+  value?: FrontendAction['value'],
+  options?: FrontendAction['scrollOptions'],
+): Promise<boolean> {
+  try {
+    switch (action) {
+      case 'click':
+        element.click()
+        break
+
+      case 'hover':
+        element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+        element.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+        break
+
+      case 'focus':
+        element.focus()
+        break
+
+      case 'blur':
+        element.blur()
+        break
+
+      case 'scroll':
+        if (options) {
+          const scrollBehavior = options.smooth ? 'smooth' : 'auto'
+          if (options.direction === 'top') {
+            element.scrollTo({ top: 0, behavior: scrollBehavior })
+          } else if (options.direction === 'bottom') {
+            element.scrollTo({
+              top: element.scrollHeight,
+              behavior: scrollBehavior,
+            })
+          } else if (options.offset !== undefined) {
+            element.scrollBy({ top: options.offset, behavior: scrollBehavior })
+          }
+        } else {
+          // 默认滚动到元素
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        break
+
+      case 'scrollIntoView':
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        break
+
+      case 'select':
+        // 适用于 checkbox、radio、select 等
+        if (element instanceof HTMLInputElement) {
+          if (element.type === 'checkbox' || element.type === 'radio') {
+            element.checked =
+              typeof value === 'boolean' ? value : value !== 'false'
+            element.dispatchEvent(new Event('change', { bubbles: true }))
+          }
+        } else if (element instanceof HTMLSelectElement) {
+          if (value !== undefined) element.value = String(value)
+          element.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+        break
+
+      case 'toggle':
+        // 切换状态
+        if (element instanceof HTMLInputElement) {
+          if (element.type === 'checkbox') {
+            element.checked = !element.checked
+            element.dispatchEvent(new Event('change', { bubbles: true }))
+          }
+        } else {
+          // 对于其他元素，尝试点击
+          element.click()
+        }
+        break
+
+      case 'expand':
+        // 展开折叠元素
+        if (element.getAttribute('aria-expanded') === 'false') {
+          element.click()
+        }
+        break
+
+      case 'collapse':
+        // 收起折叠元素
+        if (element.getAttribute('aria-expanded') === 'true') {
+          element.click()
+        }
+        break
+
+      default:
+        console.warn(
+          `[AgentGlobalActions] Unknown interaction action: ${action}`,
+        )
+        return false
+    }
+
+    return true
+  } catch (error) {
+    console.error(`[AgentGlobalActions] Interaction failed:`, error)
+    return false
+  }
+}
+
+/**
+ * Agent 全局动作处理组件
+ * 必须在 BrowserRouter 内部使用
+ */
+export function AgentGlobalActions() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const musicPlayer = useMusicPlayerControl()
+  const isNavigatingRef = useRef(false)
+
+  // 路由导航处理器
+  const handleNavigate = useCallback(
+    async (action: FrontendAction): Promise<boolean> => {
+      if (action.type !== 'navigate') return false
+
+      // 防止重复导航
+      if (isNavigatingRef.current) {
+        console.warn('[AgentGlobalActions] Navigation already in progress')
+        return false
+      }
+
+      try {
+        isNavigatingRef.current = true
+
+        // 优先使用 fullPath
+        let targetPath = action.fullPath || action.path
+
+        if (!targetPath) {
+          console.warn('[AgentGlobalActions] Navigate action without path')
+          return false
+        }
+
+        // 如果有 query 参数，构建查询字符串
+        if (
+          action.query &&
+          Object.keys(action.query).length > 0 &&
+          !action.fullPath
+        ) {
+          const searchParams = new URLSearchParams()
+          for (const [key, value] of Object.entries(action.query)) {
+            if (value !== undefined && value !== null) {
+              searchParams.set(key, String(value))
+            }
+          }
+          const queryString = searchParams.toString()
+          if (queryString) {
+            targetPath = `${targetPath}?${queryString}`
+          }
+        }
+
+        // 检查是否是同一路径
+        if (
+          location.pathname === targetPath ||
+          `${location.pathname}${location.search}` === targetPath
+        ) {
+          console.log(
+            '[AgentGlobalActions] Already at target path:',
+            targetPath,
+          )
+          return true
+        }
+
+        console.log(
+          '[AgentGlobalActions] Navigating to:',
+          targetPath,
+          action.replace ? '(replace)' : '',
+        )
+
+        // 执行导航
+        if (action.replace) {
+          navigate(targetPath, { replace: true, state: action.params })
+        } else {
+          navigate(targetPath, { state: action.params })
+        }
+
+        return true
+      } finally {
+        // 延迟重置，允许导航完成
+        setTimeout(() => {
+          isNavigatingRef.current = false
+        }, 100)
+      }
+    },
+    [navigate, location],
+  )
+
+  // 页面元素交互处理器
+  const handlePageInteract = useCallback(
+    async (action: FrontendAction): Promise<boolean> => {
+      if (action.type !== 'page_interact') return false
+
+      const target = action.target as PageElementTarget | undefined
+      if (!target) {
+        console.warn('[AgentGlobalActions] page_interact without target')
+        return false
+      }
+
+      // 等待元素出现
+      const waitTimeout = action.waitFor?.timeout || 5000
+      const element = await waitForElement(target, waitTimeout)
+
+      if (!element) {
+        console.warn('[AgentGlobalActions] Element not found:', target)
+        return false
+      }
+
+      // 如果需要等待元素可见
+      if (action.waitFor?.visible) {
+        const isVisible = element.offsetWidth > 0 && element.offsetHeight > 0
+        if (!isVisible) {
+          console.warn('[AgentGlobalActions] Element not visible:', target)
+          return false
+        }
+      }
+
+      // 执行交互动作
+      const interactionAction = action.action || 'click'
+      return executeInteraction(
+        element,
+        interactionAction,
+        action.value,
+        action.scrollOptions,
+      )
+    },
+    [],
+  )
+
+  // Brew 文章打开处理器
+  const handleBrewOpenArticle = useCallback(
+    async (action: FrontendAction): Promise<boolean> => {
+      if (action.type !== 'brew_open_article') return false
+
+      const params = action.params as
+        | {
+            articleId?: string
+            articleLink?: string
+            openLatest?: boolean
+            openReader?: boolean
+          }
+        | undefined
+
+      console.log('[AgentGlobalActions] Opening brew article:', params)
+
+      // 检查当前是否在 Brew 页面
+      const isOnBrewPage =
+        location.pathname === '/brew' || location.pathname.startsWith('/brew/')
+
+      if (!isOnBrewPage) {
+        // 不在 Brew 页面，先导航过去
+        console.log(
+          '[AgentGlobalActions] Not on Brew page, navigating first...',
+        )
+
+        // 将待执行的操作存储到 sessionStorage，让 Brew 组件挂载后自行检查执行
+        // 这样可以避免事件在组件挂载前发送导致丢失的竞态条件
+        const pendingAction = {
+          articleId: params?.articleId,
+          articleLink: params?.articleLink,
+          openLatest: params?.openLatest ?? true,
+          timestamp: Date.now(),
+        }
+        sessionStorage.setItem(
+          'brew_pending_open_article',
+          JSON.stringify(pendingAction),
+        )
+        console.log(
+          '[AgentGlobalActions] Stored pending action to sessionStorage:',
+          pendingAction,
+        )
+
+        navigate('/brew')
+      } else {
+        // 已在 Brew 页面，直接发送事件
+        const event = new CustomEvent('agent:open-brew-article', {
+          detail: {
+            articleId: params?.articleId,
+            articleLink: params?.articleLink,
+            openLatest: params?.openLatest ?? true,
+          },
+        })
+        window.dispatchEvent(event)
+      }
+
+      return true
+    },
+    [location.pathname, navigate],
+  )
+
+  // ============ 音乐播放器控制处理 ============
+  const handleMusicControl = useCallback(
+    async (frontendAction: FrontendAction): Promise<boolean> => {
+      console.log('[AgentGlobalActions] handleMusicControl:', frontendAction)
+
+      const action = frontendAction.action as string
+      const value = frontendAction.value as number | undefined
+
+      switch (action) {
+        case 'play':
+        case 'pause':
+        case 'toggle':
+        case 'toggle-play-pause':
+          window.dispatchEvent(new CustomEvent('toggle-play-pause'))
+          break
+
+        case 'next':
+          window.dispatchEvent(new CustomEvent('music-player-next'))
+          break
+
+        case 'previous':
+        case 'prev':
+          window.dispatchEvent(new CustomEvent('music-player-prev'))
+          break
+
+        case 'volume':
+          if (value !== undefined) {
+            // value 应该是 0-1 范围（后端已转换）
+            window.dispatchEvent(
+              new CustomEvent('music-player-volume', {
+                detail: { volume: value },
+              }),
+            )
+          }
+          break
+
+        case 'mute':
+          window.dispatchEvent(
+            new CustomEvent('music-player-mute', {
+              detail: { muted: frontendAction.value !== false },
+            }),
+          )
+          break
+
+        case 'seek':
+          if (value !== undefined) {
+            window.dispatchEvent(
+              new CustomEvent('music-player-seek', {
+                detail: { position: value },
+              }),
+            )
+          }
+          break
+
+        default:
+          console.warn('[AgentGlobalActions] Unknown music action:', action)
+          return false
+      }
+
+      return true
+    },
+    [],
+  )
+
+  // ============ 音乐歌单加载处理 ============
+  const handleMusicLoadPlaylist = useCallback(
+    async (frontendAction: FrontendAction): Promise<boolean> => {
+      console.log(
+        '[AgentGlobalActions] handleMusicLoadPlaylist:',
+        frontendAction,
+      )
+
+      // 从 frontendAction 中提取歌单信息
+      // 后端返回的数据结构：{ type: 'music_load_playlist', playlistId, source, autoPlay }
+      // 字段可能在顶层或 data 中
+      const playlistId =
+        frontendAction.playlistId ||
+        (frontendAction.data?.playlistId as string) ||
+        ''
+      const source =
+        frontendAction.source ||
+        (frontendAction.data?.source as string) ||
+        'netease'
+      const autoPlay =
+        frontendAction.autoPlay ??
+        (frontendAction.data?.autoPlay as boolean) ??
+        true
+
+      if (!playlistId) {
+        console.error(
+          '[AgentGlobalActions] Missing playlistId for music_load_playlist',
+        )
+        return false
+      }
+
+      console.log(
+        `[AgentGlobalActions] Loading playlist: ${playlistId} from ${source}, autoPlay: ${autoPlay}`,
+      )
+
+      // 发送事件给音乐播放器组件
+      window.dispatchEvent(
+        new CustomEvent('music-player-load-playlist', {
+          detail: {
+            playlistId,
+            source,
+            autoPlay,
+            timestamp: Date.now(),
+          },
+        }),
+      )
+
+      return true
+    },
+    [],
+  )
+
+  const handleMusicGetStatus = useCallback(async (): Promise<unknown> => {
+    return {
+      isEnabled: musicPlayer.isEnabled,
+      isPlaying: musicPlayer.isPlaying,
+      currentSong: musicPlayer.currentSong,
+      currentSongIndex: musicPlayer.currentSongIndex,
+      playlistLength: musicPlayer.playlistLength,
+      currentLyricIndex: musicPlayer.currentLyricIndex,
+    }
+  }, [
+    musicPlayer.isEnabled,
+    musicPlayer.isPlaying,
+    musicPlayer.currentSong,
+    musicPlayer.currentSongIndex,
+    musicPlayer.playlistLength,
+    musicPlayer.currentLyricIndex,
+  ])
+
+  // ============ 阅读列表处理 ============
+  const handleReadingList = useCallback(
+    async (frontendAction: FrontendAction): Promise<boolean> => {
+      console.log('[AgentGlobalActions] handleReadingList:', frontendAction)
+
+      const payload = frontendAction.payload as
+        | {
+            items?: Array<{
+              id: number
+              title: string
+              author?: string
+              sourceName?: string
+              publishedAt?: string
+              summary?: string
+              relevanceReason?: string
+              link?: string
+              content?: string
+              fromWebSearch?: boolean
+            }>
+            name?: string
+          }
+        | undefined
+
+      if (!payload?.items || payload.items.length === 0) {
+        console.warn('[AgentGlobalActions] Reading list is empty')
+        return false
+      }
+
+      console.log(
+        `[AgentGlobalActions] Setting reading list: ${payload.name} with ${payload.items.length} items`,
+      )
+
+      // 检查是否包含网络搜索结果
+      const hasWebSearchItems = payload.items.some((item) => item.fromWebSearch)
+      if (hasWebSearchItems) {
+        console.log(
+          '[AgentGlobalActions] Reading list contains web search results',
+        )
+      }
+
+      // 准备阅读列表数据
+      const readingListData = {
+        id: `reading_list_${Date.now()}`,
+        name: payload.name || '智能阅读列表',
+        criteria: frontendAction.criteria || '',
+        items: payload.items,
+        createdAt: new Date().toISOString(),
+      }
+
+      // 获取第一篇文章的信息
+      const firstItem = payload.items[0]
+      const firstItemData = firstItem?.fromWebSearch
+        ? {
+            ...firstItem,
+            isWebSearchArticle: true,
+          }
+        : null
+
+      // 检查当前是否在 Brew 页面
+      const isOnBrewPage =
+        location.pathname === '/brew' || location.pathname.startsWith('/brew/')
+
+      if (!isOnBrewPage) {
+        // 不在 Brew 页面，将阅读列表和待打开文章存储到 sessionStorage
+        // 让 Brew 组件挂载后自行检查执行，避免事件丢失
+        const pendingAction = {
+          readingList: readingListData,
+          articleId: payload.items[0]?.id.toString(),
+          webSearchArticle: firstItemData, // 如果是网络搜索文章，传递完整数据
+          timestamp: Date.now(),
+        }
+        sessionStorage.setItem(
+          'brew_pending_reading_list',
+          JSON.stringify(pendingAction),
+        )
+        console.log(
+          '[AgentGlobalActions] Stored pending reading list to sessionStorage:',
+          pendingAction,
+        )
+
+        navigate('/brew')
+      } else {
+        // 已在 Brew 页面，直接发送事件
+        window.dispatchEvent(
+          new CustomEvent('agent:set-reading-list', {
+            detail: readingListData,
+          }),
+        )
+
+        // 打开阅读列表中的第一篇文章
+        if (firstItem) {
+          // 延迟发送，确保阅读列表已设置
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent('agent:open-brew-article', {
+                detail: {
+                  articleId: firstItem.id.toString(),
+                  openLatest: false,
+                  // 如果是网络搜索文章，传递完整数据
+                  webSearchArticle: firstItemData,
+                },
+              }),
+            )
+          }, 100)
+        }
+      }
+
+      return true
+    },
+    [location.pathname, navigate],
+  )
+
+  // 注册处理器
+  useEffect(() => {
+    console.log('[AgentGlobalActions] Registering global action handlers')
+
+    registerActionHandler('navigate', handleNavigate)
+    registerActionHandler('page_interact', handlePageInteract)
+    registerActionHandler('brew_open_article', handleBrewOpenArticle)
+    registerActionHandler('music_control', handleMusicControl)
+    registerActionHandler('music_get_status', handleMusicGetStatus)
+    registerActionHandler('music_load_playlist', handleMusicLoadPlaylist)
+    registerActionHandler('reading_list', handleReadingList)
+
+    return () => {
+      console.log('[AgentGlobalActions] Unregistering global action handlers')
+      unregisterActionHandler('navigate')
+      unregisterActionHandler('page_interact')
+      unregisterActionHandler('brew_open_article')
+      unregisterActionHandler('music_control')
+      unregisterActionHandler('music_get_status')
+      unregisterActionHandler('music_load_playlist')
+      unregisterActionHandler('reading_list')
+    }
+  }, [
+    handleNavigate,
+    handlePageInteract,
+    handleBrewOpenArticle,
+    handleMusicControl,
+    handleMusicGetStatus,
+    handleMusicLoadPlaylist,
+    handleReadingList,
+  ])
+
+  // 这个组件不渲染任何 UI
+  return null
+}
+
+export default AgentGlobalActions

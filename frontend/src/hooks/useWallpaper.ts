@@ -1,0 +1,809 @@
+/**
+ * 壁纸管理 Hook
+ *
+ * 提供壁纸加载、刷新和状态管理功能
+ * 确保壁纸URL和颜色提取的一致性
+ *
+ * @module useWallpaper
+ */
+
+import { useCallback, useEffect, useState } from 'react'
+import { API_URL } from '../config'
+import { fetchJsonWithRetry } from '../utils/apiRetry'
+import { loadImagePooled } from '../utils/objectPool'
+import { proxyImageUrl } from '../utils/proxyImageUrl'
+import { getUIConfigDeduped } from '../utils/requestDedup'
+import { getCacheInfo } from '../utils/wallpaperColorCache'
+import {
+  areUrlsEquivalent,
+  effectiveWallpaperBlur,
+  extractBackgroundUrl,
+  normalizeWallpaperUrl,
+  wallpaperState,
+} from '../utils/wallpaperState'
+
+export { areUrlsEquivalent, normalizeWallpaperUrl }
+
+// ============================================================================
+// 类型定义
+// ============================================================================
+
+/** 公开 API 应为 boolean；兼容网关/旧缓存把 true/false 序列化成字符串的情况 */
+function asConfigBool(value: unknown, defaultValue: boolean): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase()
+    if (s === 'true' || s === '1' || s === 'yes') return true
+    if (s === 'false' || s === '0' || s === 'no' || s === '') return false
+  }
+  if (value == null) return defaultValue
+  return defaultValue
+}
+
+function asConfigNumber(value: unknown, defaultValue: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value)
+    if (Number.isFinite(n)) return n
+  }
+  return defaultValue
+}
+
+interface WallpaperConfig {
+  wallpaper_url: string
+  wallpaper_blur: number
+  // Evocative 壁纸动效配置
+  evocative_parallax: boolean
+  evocative_dynamic_blur: boolean
+  evocative_ripple: boolean
+  evocative_fps: number
+  evocative_ripple_quality: number
+}
+
+interface LoadWallpaperResult {
+  /** 验证后的实际URL */
+  actualUrl: string
+  /** 模糊度 */
+  blur: number
+  /** URL是否经过验证 */
+  verified: boolean
+  /** @deprecated 使用 evocative 替代 */
+  parallaxEnabled: boolean
+  /** Evocative 壁纸动效配置 */
+  evocative: {
+    parallax: boolean
+    dynamicBlur: boolean
+    ripple: boolean
+    fps: number
+    rippleQuality: number
+  }
+}
+
+// ============================================================================
+// 常量
+// ============================================================================
+
+/** 图片加载超时时间 */
+const IMAGE_LOAD_TIMEOUT = 15000
+
+/** 壁纸元素ID */
+const WALLPAPER_ELEMENT_ID = 'wallpaper'
+
+/** 随机图片服务列表 */
+const RANDOM_IMAGE_SERVICES = [
+  'picsum.photos',
+  'loremflickr.com',
+  'source.unsplash.com',
+  'unsplash.com/random',
+  'api.unsplash.com',
+  'bing.com/hpimagearchive',
+] as const
+
+/** 静态CDN标识 */
+const STATIC_CDN_INDICATORS = [
+  'cdn.',
+  'static.',
+  '/static/',
+  '/images/',
+  '/assets/',
+  '/uploads/',
+] as const
+
+/** 图片扩展名 */
+const IMAGE_EXTENSIONS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.svg',
+] as const
+
+/** 动态脚本扩展名 */
+const DYNAMIC_EXTENSIONS = ['.php', '.jsp', '.asp', '.aspx', '.py'] as const
+
+// ============================================================================
+// 工具函数
+// ============================================================================
+
+/**
+ * 从颜色缓存中获取一个不同于当前URL的已缓存壁纸
+ * 利用 wallpaperColorCache 的缓存信息，避免重复维护缓存
+ * @param currentUrl 当前壁纸URL
+ * @returns 缓存中的其他壁纸URL，如果没有则返回null
+ */
+function getCachedAlternativeWallpaper(
+  currentUrl: string | null,
+): string | null {
+  try {
+    const cacheInfo = getCacheInfo()
+    if (!cacheInfo.exists || !cacheInfo.items || cacheInfo.items.length < 2) {
+      return null
+    }
+
+    // 从颜色缓存中提取完整URL（getCacheInfo返回的是截断的URL用于调试）
+    // 需要直接读取localStorage获取完整URL
+    const cached = localStorage.getItem('myriad_wallpaper_color_cache_v5')
+    if (!cached) return null
+
+    const store = JSON.parse(cached)
+    if (!store.items || store.items.length < 2) return null
+
+    // 过滤掉当前URL和过期项
+    const now = Date.now()
+    const CACHE_DURATION_MS = 6 * 60 * 60 * 1000 // 6小时
+    const alternatives = store.items.filter(
+      (item: { url: string; timestamp: number }) => {
+        // 过滤过期项
+        if (now - item.timestamp > CACHE_DURATION_MS) return false
+        // 过滤当前URL
+        if (areUrlsEquivalent(item.url, currentUrl)) return false
+        return true
+      },
+    )
+
+    if (alternatives.length === 0) return null
+
+    // 随机选择一个
+    const randomIndex = Math.floor(Math.random() * alternatives.length)
+    return alternatives[randomIndex].url
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 判断URL是否为单一静态图片链接
+ * 返回true表示是固定的静态图片，不应显示刷新按钮
+ */
+function isStaticImageUrl(url: string): boolean {
+  if (!url) return true
+
+  const lowerUrl = url.toLowerCase()
+
+  // 随机图片服务 → 可刷新
+  if (RANDOM_IMAGE_SERVICES.some((service) => lowerUrl.includes(service))) {
+    return false
+  }
+
+  // 包含 /random 或 /daily 路径 → 可刷新
+  if (lowerUrl.includes('/random') || lowerUrl.includes('/daily')) {
+    return false
+  }
+
+  // 动态脚本 → 可刷新
+  if (DYNAMIC_EXTENSIONS.some((ext) => lowerUrl.endsWith(ext))) {
+    return false
+  }
+
+  // 不以图片扩展名结尾 → 可能是API → 可刷新
+  const endsWithImage = IMAGE_EXTENSIONS.some((ext) => lowerUrl.endsWith(ext))
+  if (!endsWithImage) {
+    return false
+  }
+
+  // 静态CDN图片 → 不可刷新
+  if (STATIC_CDN_INDICATORS.some((indicator) => lowerUrl.includes(indicator))) {
+    return true
+  }
+
+  // 默认可刷新（保守策略）
+  return false
+}
+
+/**
+ * 从常见图床 / 随机图 API 的 JSON 中抽出图片 URL。
+ * 支持：url / image / img / src / pic / data.url / images[0].url 等。
+ */
+function extractImageUrlFromJson(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null
+  const obj = data as Record<string, unknown>
+
+  const tryString = (v: unknown): string | null => {
+    if (typeof v !== 'string') return null
+    const s = v.trim()
+    if (!s) return null
+    if (
+      s.startsWith('http://') ||
+      s.startsWith('https://') ||
+      s.startsWith('//') ||
+      s.startsWith('data:image/')
+    ) {
+      return s.startsWith('//') ? `https:${s}` : s
+    }
+    return null
+  }
+
+  for (const key of [
+    'url',
+    'image',
+    'img',
+    'src',
+    'pic',
+    'photo',
+    'image_url',
+    'imgurl',
+    'img_url',
+  ]) {
+    const hit = tryString(obj[key])
+    if (hit) return hit
+  }
+
+  // nested: data.url / data.image / result.url
+  for (const nestKey of ['data', 'result', 'payload', 'images']) {
+    const nested = obj[nestKey]
+    if (Array.isArray(nested) && nested.length > 0) {
+      const first = nested[0]
+      if (typeof first === 'string') {
+        const hit = tryString(first)
+        if (hit) return hit
+      }
+      if (first && typeof first === 'object') {
+        const fromFirst = extractImageUrlFromJson(first)
+        if (fromFirst) return fromFirst
+      }
+    }
+    if (nested && typeof nested === 'object') {
+      const fromNest = extractImageUrlFromJson(nested)
+      if (fromNest) return fromNest
+    }
+  }
+
+  return null
+}
+
+/**
+ * 获取实际的图片 URL：
+ * 1) HEAD 跟随 302 重定向
+ * 2) 若响应像 JSON 图床 API，GET 并解析常见字段（url/image/img/...）
+ * 3) 失败则回退原始 URL
+ */
+async function resolveImageUrl(
+  apiUrl: string,
+  bustCache = false,
+): Promise<string> {
+  const url = bustCache
+    ? apiUrl.includes('?')
+      ? `${apiUrl}&t=${Date.now()}`
+      : `${apiUrl}?t=${Date.now()}`
+    : apiUrl
+
+  try {
+    // Prefer HEAD for pure redirect chains (cheap).
+    const head = await fetch(url, { method: 'HEAD', redirect: 'follow' })
+    const contentType = head.headers.get('content-type') || ''
+    if (contentType.includes('image/')) {
+      return head.url || url
+    }
+    // 非图片：可能是 JSON 图床或 text；改 GET 解析
+    if (
+      contentType.includes('json') ||
+      contentType.includes('text/') ||
+      !contentType
+    ) {
+      const getResp = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        headers: { Accept: 'application/json, image/*, */*' },
+      })
+      const getType = getResp.headers.get('content-type') || ''
+      if (getType.includes('image/')) {
+        return getResp.url || url
+      }
+      if (getType.includes('json') || getType.includes('text/')) {
+        const text = await getResp.text()
+        try {
+          const data = JSON.parse(text)
+          const extracted = extractImageUrlFromJson(data)
+          // JSON endpoints often return CDN URLs that need hotlink proxy
+          if (extracted) return proxyImageUrl(extracted) || extracted
+        } catch {
+          // not JSON — fall through
+        }
+      }
+      // HEAD 已跟随重定向到最终 URL 时可用
+      if (head.url && head.url !== url) return head.url
+    } else if (head.url) {
+      return head.url
+    }
+  } catch {
+    // HEAD 失败：尝试 GET JSON
+    try {
+      const getResp = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        headers: { Accept: 'application/json, image/*, */*' },
+      })
+      const getType = getResp.headers.get('content-type') || ''
+      if (getType.includes('image/')) return getResp.url || url
+      const text = await getResp.text()
+      try {
+        const data = JSON.parse(text)
+        const extracted = extractImageUrlFromJson(data)
+        if (extracted) return proxyImageUrl(extracted) || extracted
+      } catch {
+        /* ignore */
+      }
+      if (getResp.url) return getResp.url
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return url
+}
+
+/**
+ * 预加载图片（使用对象池）
+ * 直接加载图片，不使用代理
+ * @returns 加载成功返回true，失败返回false
+ */
+function preloadImage(
+  url: string,
+  timeout = IMAGE_LOAD_TIMEOUT,
+): Promise<boolean> {
+  // 使用池化的图片加载，减少 GC 压力
+  return loadImagePooled(url, { timeout })
+}
+
+function setWallpaperAwaiting(active: boolean) {
+  const bg = document.getElementById('bg-container')
+  if (!bg) return
+  bg.classList.toggle('wallpaper-awaiting', active)
+}
+
+/**
+ * 应用壁纸到DOM并更新全局状态
+ * 首次加载：预加载完成后淡入，背景层用呼吸占位避免白屏突兀。
+ * @param imageUrl 目标图片URL
+ * @param blur 模糊度
+ * @param forceRefresh 是否强制刷新（即使URL相同）
+ * @returns 验证后的URL，失败返回null
+ */
+async function applyWallpaperToDOM(
+  imageUrl: string,
+  blur: number,
+  forceRefresh = false,
+): Promise<string | null> {
+  const wallpaperEl = document.getElementById(WALLPAPER_ELEMENT_ID)
+  if (!wallpaperEl) {
+    console.warn('壁纸元素不存在')
+    return null
+  }
+
+  // 🔒 检查是否需要更新：如果当前壁纸与目标相同且不是强制刷新，跳过
+  const currentUrl = extractBackgroundUrl(WALLPAPER_ELEMENT_ID)
+  if (!forceRefresh && currentUrl && areUrlsEquivalent(currentUrl, imageUrl)) {
+    // 已经是目标壁纸，只需更新模糊度（如果不同）
+    const currentFilter = wallpaperEl.style.filter
+    const targetFilter = `blur(${effectiveWallpaperBlur(blur)}px)`
+    if (currentFilter !== targetFilter) {
+      wallpaperEl.style.filter = targetFilter
+    }
+    // 确保状态同步
+    wallpaperState.updateState(imageUrl, blur)
+    wallpaperEl.classList.add('wallpaper-visible')
+    setWallpaperAwaiting(false)
+    return imageUrl
+  }
+
+  const hadVisibleWallpaper =
+    wallpaperEl.classList.contains('wallpaper-visible') && !!currentUrl
+
+  // 标记加载状态 + 首次加载呼吸占位
+  wallpaperState.setLoading(true)
+  if (!hadVisibleWallpaper) {
+    setWallpaperAwaiting(true)
+    wallpaperEl.classList.remove('wallpaper-visible')
+  } else {
+    // 切换壁纸时先轻微淡出，再换图淡入
+    wallpaperEl.classList.add('wallpaper-fading')
+    wallpaperEl.classList.remove('wallpaper-visible')
+  }
+
+  try {
+    // 预加载图片
+    const loaded = await preloadImage(imageUrl)
+    if (!loaded) {
+      wallpaperState.setError('图片加载失败')
+      wallpaperEl.classList.remove('wallpaper-fading')
+      if (hadVisibleWallpaper) {
+        wallpaperEl.classList.add('wallpaper-visible')
+      }
+      return null
+    }
+
+    // 🔒 再次检查：预加载期间可能已经切换到目标壁纸
+    const currentUrlAfterLoad = extractBackgroundUrl(WALLPAPER_ELEMENT_ID)
+    if (
+      !forceRefresh &&
+      currentUrlAfterLoad &&
+      areUrlsEquivalent(currentUrlAfterLoad, imageUrl)
+    ) {
+      wallpaperState.updateState(imageUrl, blur)
+      wallpaperEl.classList.remove('wallpaper-fading')
+      wallpaperEl.classList.add('wallpaper-visible')
+      setWallpaperAwaiting(false)
+      return imageUrl
+    }
+
+    // 应用到 DOM（先不可见，再渐显）
+    wallpaperEl.style.backgroundImage = `url(${imageUrl})`
+    wallpaperEl.style.filter = `blur(${effectiveWallpaperBlur(blur)}px)`
+    wallpaperEl.classList.remove('wallpaper-fading')
+
+    // 更新全局状态
+    wallpaperState.updateState(imageUrl, blur)
+
+    // 等两帧再淡入，保证 background-image 已提交绘制
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    wallpaperEl.classList.add('wallpaper-visible')
+    setWallpaperAwaiting(false)
+
+    // 验证DOM是否已更新
+    const appliedUrl = extractBackgroundUrl(WALLPAPER_ELEMENT_ID)
+
+    if (appliedUrl && areUrlsEquivalent(appliedUrl, imageUrl)) {
+      return imageUrl
+    }
+
+    // 二次验证
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    const retryUrl = extractBackgroundUrl(WALLPAPER_ELEMENT_ID)
+
+    if (retryUrl && areUrlsEquivalent(retryUrl, imageUrl)) {
+      return imageUrl
+    }
+
+    console.warn('壁纸应用验证失败', { expected: imageUrl, actual: retryUrl })
+    return retryUrl || imageUrl
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '未知错误'
+    wallpaperState.setError(message)
+    wallpaperEl.classList.remove('wallpaper-fading')
+    if (hadVisibleWallpaper) {
+      wallpaperEl.classList.add('wallpaper-visible')
+    }
+    return null
+  } finally {
+    wallpaperState.setLoading(false)
+    // Keep awaiting if we never got a visible wallpaper (failed first load)
+    if (!wallpaperEl.classList.contains('wallpaper-visible')) {
+      setWallpaperAwaiting(true)
+    }
+  }
+}
+
+/**
+ * 获取壁纸配置（带自动重试）
+ */
+async function fetchWallpaperConfig(): Promise<WallpaperConfig | null> {
+  console.debug('[Wallpaper] Fetching wallpaper config...')
+  try {
+    // 先走去重缓存（启动时与其他 config/ui 消费方共享同一次请求），
+    // 失败再退回带重试的独立请求，保证壁纸这一视觉核心的健壮性
+    const data = await getUIConfigDeduped().catch(() =>
+      fetchJsonWithRetry<any>(`${API_URL}/api/config/ui`, {
+        maxRetries: 3,
+        timeout: 10000,
+        onRetry: (error, attempt, delay) => {
+          console.warn(
+            `壁纸配置获取失败 (尝试 ${attempt}): ${error.message}. ${delay}ms后重试...`,
+          )
+        },
+      }),
+    )
+
+    const evocative = {
+      evocative_parallax: asConfigBool(data.evocative_parallax, true),
+      evocative_dynamic_blur: asConfigBool(data.evocative_dynamic_blur, false),
+      evocative_ripple: asConfigBool(data.evocative_ripple, false),
+      evocative_fps: asConfigNumber(data.evocative_fps, 30),
+      evocative_ripple_quality: asConfigNumber(
+        data.evocative_ripple_quality,
+        0.85,
+      ),
+    }
+
+    console.debug('[Wallpaper] Config received:', {
+      wallpaper_url: data.wallpaper_url,
+      blur: data.wallpaper_blur,
+      evocative: {
+        parallax: evocative.evocative_parallax,
+        dynamicBlur: evocative.evocative_dynamic_blur,
+        ripple: evocative.evocative_ripple,
+        fps: evocative.evocative_fps,
+        rippleQuality: evocative.evocative_ripple_quality,
+      },
+    })
+
+    // 即使没有壁纸 URL，也返回动效开关（避免图挂了/URL 空时整条 evocative 被丢掉）
+    return {
+      wallpaper_url: typeof data.wallpaper_url === 'string' ? data.wallpaper_url : '',
+      wallpaper_blur: asConfigNumber(data.wallpaper_blur, 3),
+      ...evocative,
+    }
+  } catch (error) {
+    console.error('壁纸配置获取失败:', error)
+    return null
+  }
+}
+
+// ============================================================================
+// Hook 实现
+// ============================================================================
+
+/**
+ * loadWallpaper 去重机制
+ * 多个组件同时调用 loadWallpaper 时，只执行一次实际加载
+ */
+let pendingLoadWallpaper: Promise<LoadWallpaperResult | null> | null = null
+let lastLoadTimestamp = 0
+const LOAD_DEBOUNCE_MS = 1000 // 1秒内的重复调用直接返回上次结果
+let lastLoadResult: LoadWallpaperResult | null = null
+
+/** Drop debounce cache so config save → wallpaperConfigChanged always reloads. */
+export function invalidateWallpaperLoadCache(): void {
+  lastLoadResult = null
+  lastLoadTimestamp = 0
+  pendingLoadWallpaper = null
+}
+
+/**
+ * 壁纸管理 Hook
+ */
+export function useWallpaper() {
+  const [wallpaperUrl, setWallpaperUrl] = useState<string>('')
+  const [canRefresh, setCanRefresh] = useState<boolean>(false)
+  const [blur, setBlur] = useState<number>(3)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  // 订阅全局状态变化
+  useEffect(() => {
+    return wallpaperState.subscribe((snapshot) => {
+      setIsLoading(snapshot.isLoading)
+    })
+  }, [])
+
+  /**
+   * 加载壁纸配置和显示（带去重）
+   * 多个组件同时调用时，只执行一次实际加载
+   */
+  const loadWallpaper =
+    useCallback(async (): Promise<LoadWallpaperResult | null> => {
+      const now = Date.now()
+      console.debug('[Wallpaper] loadWallpaper called')
+
+      // 1秒内的重复调用，直接返回上次结果
+      if (lastLoadResult && now - lastLoadTimestamp < LOAD_DEBOUNCE_MS) {
+        console.debug('[Wallpaper] Returning cached result (debounce)')
+        // 同步本地状态
+        if (lastLoadResult.actualUrl) {
+          setWallpaperUrl(lastLoadResult.actualUrl)
+          setBlur(lastLoadResult.blur)
+        }
+        return lastLoadResult
+      }
+
+      // 如果有正在进行的加载，等待其完成
+      if (pendingLoadWallpaper) {
+        console.debug('[Wallpaper] Waiting for pending load...')
+        const result = await pendingLoadWallpaper
+        // 同步本地状态
+        if (result?.actualUrl) {
+          setWallpaperUrl(result.actualUrl)
+          setBlur(result.blur)
+        }
+        return result
+      }
+
+      console.debug('[Wallpaper] Starting new load...')
+      // 执行实际加载
+      const doLoad = async (): Promise<LoadWallpaperResult | null> => {
+        try {
+          const config = await fetchWallpaperConfig()
+          if (!config) {
+            return null
+          }
+
+          const evocative = {
+            parallax: config.evocative_parallax,
+            dynamicBlur: config.evocative_dynamic_blur,
+            ripple: config.evocative_ripple,
+            fps: config.evocative_fps,
+            rippleQuality: config.evocative_ripple_quality,
+          }
+
+          // 动效开关与壁纸图解耦：图失败时仍要把 evocative 交给 AppLayout
+          const buildResult = (
+            actualUrl: string,
+            verified: boolean,
+          ): LoadWallpaperResult => ({
+            actualUrl,
+            blur: config.wallpaper_blur,
+            verified,
+            parallaxEnabled: evocative.parallax,
+            evocative,
+          })
+
+          if (!config.wallpaper_url) {
+            const result = buildResult('', false)
+            lastLoadResult = result
+            lastLoadTimestamp = Date.now()
+            setBlur(config.wallpaper_blur)
+            setCanRefresh(false)
+            return result
+          }
+
+          const actualUrl = await resolveImageUrl(config.wallpaper_url)
+
+          // 验证URL有效性
+          if (!actualUrl || actualUrl.includes('/api/proxy/music/')) {
+            const result = buildResult('', false)
+            lastLoadResult = result
+            lastLoadTimestamp = Date.now()
+            setBlur(config.wallpaper_blur)
+            setCanRefresh(false)
+            return result
+          }
+
+          // 应用到DOM并验证
+          const verifiedUrl = await applyWallpaperToDOM(
+            actualUrl,
+            config.wallpaper_blur,
+          )
+
+          if (!verifiedUrl) {
+            const result = buildResult(actualUrl, false)
+            lastLoadResult = result
+            lastLoadTimestamp = Date.now()
+            setBlur(config.wallpaper_blur)
+            setCanRefresh(!isStaticImageUrl(config.wallpaper_url))
+            return result
+          }
+
+          const result = buildResult(
+            verifiedUrl,
+            areUrlsEquivalent(verifiedUrl, actualUrl),
+          )
+
+          // 缓存结果
+          lastLoadResult = result
+          lastLoadTimestamp = Date.now()
+
+          // 更新本地状态
+          setWallpaperUrl(verifiedUrl)
+          setBlur(config.wallpaper_blur)
+          setCanRefresh(!isStaticImageUrl(config.wallpaper_url))
+
+          return result
+        } catch (error) {
+          console.error('加载壁纸失败:', error)
+          return null
+        }
+      }
+
+      // 设置 pending Promise
+      pendingLoadWallpaper = doLoad()
+
+      try {
+        const result = await pendingLoadWallpaper
+        return result
+      } finally {
+        // 清除 pending（延迟清除，避免并发问题）
+        setTimeout(() => {
+          pendingLoadWallpaper = null
+        }, 100)
+      }
+    }, [])
+
+  /**
+   * 刷新壁纸
+   * 优先从颜色缓存中选择不同于当前的壁纸，如果缓存不足则请求新图片
+   */
+  const refreshWallpaper = useCallback(async (): Promise<string | null> => {
+    try {
+      const config = await fetchWallpaperConfig()
+      if (!config) {
+        return null
+      }
+
+      // 获取当前壁纸URL
+      const currentUrl =
+        wallpaperUrl || extractBackgroundUrl(WALLPAPER_ELEMENT_ID)
+
+      // 优先尝试从颜色缓存获取不同的壁纸（复用已缓存的颜色信息）
+      const cachedAlternative = getCachedAlternativeWallpaper(currentUrl)
+
+      let targetUrl: string
+
+      if (cachedAlternative) {
+        // 使用缓存中的壁纸（已有颜色缓存，切换更快）
+        targetUrl = cachedAlternative
+      } else {
+        // 缓存不足，请求新图片（添加时间戳避免缓存）
+        targetUrl = await resolveImageUrl(config.wallpaper_url, true)
+
+        // 验证URL有效性
+        if (!targetUrl || targetUrl.includes('/api/proxy/music/')) {
+          return null
+        }
+
+        // 检查新URL是否与当前相同
+        if (areUrlsEquivalent(targetUrl, currentUrl)) {
+          // 如果API返回了相同的URL，再尝试一次
+          await new Promise((resolve) => setTimeout(resolve, 100))
+          targetUrl = await resolveImageUrl(config.wallpaper_url, true)
+
+          // 如果还是相同，直接返回
+          if (areUrlsEquivalent(targetUrl, currentUrl)) {
+            return currentUrl
+          }
+        }
+      }
+
+      // 应用到DOM并验证（强制刷新）
+      const verifiedUrl = await applyWallpaperToDOM(
+        targetUrl,
+        config.wallpaper_blur,
+        true,
+      )
+
+      if (!verifiedUrl) {
+        return null
+      }
+
+      // 更新本地状态
+      setWallpaperUrl(verifiedUrl)
+      setBlur(config.wallpaper_blur)
+
+      // 触发事件通知其他组件
+      window.dispatchEvent(
+        new CustomEvent('wallpaperChanged', {
+          detail: {
+            url: verifiedUrl,
+            timestamp: wallpaperState.getAppliedTimestamp(),
+            fromCache: !!cachedAlternative,
+          },
+        }),
+      )
+
+      return verifiedUrl
+    } catch (error) {
+      console.error('刷新壁纸失败:', error)
+      return null
+    }
+  }, [wallpaperUrl])
+
+  return {
+    wallpaperUrl,
+    canRefresh,
+    blur,
+    isLoading,
+    loadWallpaper,
+    refreshWallpaper,
+  }
+}

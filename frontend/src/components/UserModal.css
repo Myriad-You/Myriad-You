@@ -1,0 +1,1528 @@
+/* ==========================================
+   用户信息按钮样式
+   ========================================== */
+.user-info-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  text-align: left;
+
+  /* 根据内容自适应宽度，不设置固定宽度 */
+  width: auto;
+  min-width: 0;
+  max-width: 66%; /* 为关闭按钮留空间 */
+}
+
+.user-info-button:hover {
+  background: rgb(0 0 0 / 4%);
+  transform: translateX(2px);
+}
+
+html.dark .user-info-button:hover {
+  background: rgb(255 255 255 / 6%);
+}
+
+.user-info-button:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================
+   音乐播放器小组件动画
+   ========================================== */
+
+/* ==========================================
+   用户弹窗样式
+   ========================================== */
+.user-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  max-width: 400px;
+  max-height: 85vh;
+  background: rgb(255 255 255 / 75%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 1.75rem;
+  border: 1px solid rgb(255 255 255 / 30%);
+  box-shadow:
+    0 25px 80px rgb(0 0 0 / 15%),
+    0 10px 30px rgb(0 0 0 / 8%),
+    inset 0 1px 0 rgb(255 255 255 / 50%);
+  z-index: 10001;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* 初始隐藏状态 */
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.92);
+
+  /* 初始状态不设置 transition，避免首次渲染时触发过渡 */
+  pointer-events: none;
+}
+
+/* 可见状态 - 只在这里启用 transition */
+.user-modal.animate-in {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+  transition:
+    opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s linear 0s;
+}
+
+/* 内容包裹层：自然高度由内容决定，供 ResizeObserver 测量后驱动弹窗高度过渡 */
+.user-modal-inner {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+
+  /* 与 .user-modal 的 max-height 一致，内容过高时由内部区域滚动 */
+  max-height: 85vh;
+  min-height: 0;
+}
+
+/* 关闭状态 */
+.user-modal.closing {
+  opacity: 0;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(0.92);
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out,
+    visibility 0s linear 0.25s;
+  pointer-events: none;
+}
+
+html.dark .user-modal {
+  background: rgb(30 30 35 / 65%);
+  border-color: rgb(255 255 255 / 8%);
+  box-shadow:
+    0 25px 80px rgb(0 0 0 / 35%),
+    0 10px 30px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+/* 浮动关闭按钮 */
+.user-modal-close-float {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: rgb(255 255 255 / 90%);
+  border: none;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+}
+
+html.dark .user-modal-close-float {
+  background: rgb(50 50 55 / 90%);
+  color: #9ca3af;
+}
+
+.user-modal-close-float:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-primary, #94a3b8) 25%,
+    transparent
+  );
+  color: var(--color-primary, #94a3b8);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 20%, transparent);
+}
+
+.user-modal-close-float:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+/* 上部区域 - Hero */
+.user-modal-hero {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1.5rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 装饰背景 */
+.user-modal-hero-bg {
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  right: -20%;
+  height: 200%;
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      color-mix(in srgb, var(--color-primary, #94a3b8) 5%, transparent) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 30% 20%,
+      color-mix(in srgb, var(--color-secondary, #94a3b8) 3%, transparent) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 70% 20%,
+      color-mix(in srgb, var(--color-accent, #cbd5e1) 3%, transparent) 0%,
+      transparent 50%
+    );
+  pointer-events: none;
+  animation: heroGlow 8s ease-in-out infinite alternate;
+}
+
+@keyframes heroGlow {
+  0% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0.6;
+    transform: translateY(-10px);
+  }
+}
+
+html.dark .user-modal-hero-bg {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      color-mix(in srgb, var(--color-primary, #94a3b8) 6%, transparent) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 30% 20%,
+      color-mix(in srgb, var(--color-secondary, #94a3b8) 4%, transparent) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 70% 20%,
+      color-mix(in srgb, var(--color-accent, #cbd5e1) 4%, transparent) 0%,
+      transparent 50%
+    );
+}
+
+/* 头像容器 */
+.user-modal-avatar-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+  animation: avatarFloat 6s ease-in-out infinite;
+}
+
+@keyframes avatarFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.user-modal-avatar-lg {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid white;
+  box-shadow:
+    0 8px 32px
+      color-mix(in srgb, var(--color-primary, #94a3b8) 25%, transparent),
+    0 4px 12px rgb(0 0 0 / 10%);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+html.dark .user-modal-avatar-lg {
+  border-color: rgb(50 50 55 / 100%);
+  box-shadow:
+    0 8px 32px
+      color-mix(in srgb, var(--color-primary, #94a3b8) 35%, transparent),
+    0 4px 12px rgb(0 0 0 / 30%);
+}
+
+.user-modal-avatar-lg:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 12px 40px
+      color-mix(in srgb, var(--color-primary, #94a3b8) 35%, transparent),
+    0 6px 16px rgb(0 0 0 / 15%);
+}
+
+/* 可点击头像：进入画像源选择 */
+.user-modal-avatar-btn {
+  position: relative;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.user-modal-avatar-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 3px;
+}
+
+.user-modal-avatar-edit-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0.15rem;
+  transform: translateX(-50%);
+  max-width: 5.5rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.user-modal-avatar-btn:hover .user-modal-avatar-edit-hint,
+.user-modal-avatar-btn:focus-visible .user-modal-avatar-edit-hint {
+  opacity: 1;
+}
+
+.user-modal-profile-source-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #64748b);
+}
+
+.user-modal-profile-source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-modal-profile-source-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgb(0 0 0 / 6%);
+  background: rgb(0 0 0 / 3%);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.user-modal-profile-source-row:hover:not(:disabled) {
+  background: rgb(0 0 0 / 6%);
+  border-color: rgb(0 0 0 / 10%);
+}
+
+.user-modal-profile-source-row.is-primary {
+  border-color: color-mix(in srgb, var(--color-primary, #6366f1) 35%, transparent);
+  background: color-mix(in srgb, var(--color-primary, #6366f1) 10%, transparent);
+}
+
+.user-modal-profile-source-row:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+html.dark .user-modal-profile-source-row {
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 4%);
+}
+
+html.dark .user-modal-profile-source-row:hover:not(:disabled) {
+  background: rgb(255 255 255 / 7%);
+}
+
+.user-modal-profile-source-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.user-modal-profile-source-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.user-modal-profile-source-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+html.dark .user-modal-profile-source-name {
+  color: rgb(255 255 255 / 92%);
+}
+
+.user-modal-profile-source-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-modal-profile-source-current {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  color: var(--color-primary, #6366f1);
+  background: color-mix(in srgb, var(--color-primary, #6366f1) 14%, transparent);
+}
+
+.user-modal-profile-source-check {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-primary, #6366f1);
+}
+
+/* 在线状态指示器 */
+.user-modal-online-dot {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 1rem;
+  height: 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(16 185 129 / 50%);
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+
+html.dark .user-modal-online-dot {
+  border-color: rgb(30 30 35 / 100%);
+}
+
+@keyframes onlinePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* 用户身份信息 */
+.user-modal-identity {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.user-modal-username {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+html.dark .user-modal-username {
+  color: #f3f4f6;
+}
+
+/* 徽章组 */
+.user-modal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.user-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.user-modal-badge:hover {
+  transform: translateY(-1px);
+}
+
+.badge-admin {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  box-shadow: 0 2px 8px rgb(251 191 36 / 30%);
+}
+
+html.dark .badge-admin {
+  background: linear-gradient(
+    135deg,
+    rgb(251 191 36 / 20%) 0%,
+    rgb(245 158 11 / 20%) 100%
+  );
+  color: #fcd34d;
+}
+
+.badge-user {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 15%, transparent) 100%
+  );
+  color: var(--color-primary, #64748b);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 15%, transparent);
+}
+
+html.dark .badge-user {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 20%, transparent) 100%
+  );
+  color: var(--color-accent, #cbd5e1);
+}
+
+.badge-github {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgb(55 65 81 / 30%);
+}
+
+html.dark .badge-github {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+}
+
+.badge-local {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+  box-shadow: 0 2px 8px rgb(59 130 246 / 20%);
+}
+
+html.dark .badge-local {
+  background: linear-gradient(
+    135deg,
+    rgb(59 130 246 / 20%) 0%,
+    rgb(37 99 235 / 20%) 100%
+  );
+  color: #93c5fd;
+}
+
+/* 混合账户徽章（本地管理员 + GitHub 绑定） */
+.badge-hybrid {
+  background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+  color: #312e81;
+  box-shadow: 0 2px 8px rgb(99 102 241 / 30%);
+}
+
+html.dark .badge-hybrid {
+  background: linear-gradient(
+    135deg,
+    rgb(129 140 248 / 25%) 0%,
+    rgb(99 102 241 / 25%) 100%
+  );
+  color: #c7d2fe;
+}
+
+/* 简介 */
+.user-modal-bio {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  max-width: 280px;
+  margin: 0 auto 1rem;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+html.dark .user-modal-bio {
+  color: #9ca3af;
+}
+
+/* 操作按钮组 */
+.user-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 320px;
+  position: relative;
+  z-index: 1;
+}
+
+.user-modal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-decoration: none;
+}
+
+.action-password {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 20%, transparent) 100%
+  );
+  color: var(--color-primary, #64748b);
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary, #94a3b8) 25%, transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 15%, transparent);
+}
+
+.action-password:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 30%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 30%, transparent) 100%
+  );
+  box-shadow: 0 6px 20px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 25%, transparent);
+}
+
+.action-logout {
+  background: rgb(0 0 0 / 4%);
+  color: #6b7280;
+  border: 1px solid rgb(0 0 0 / 8%);
+}
+
+html.dark .action-logout {
+  background: rgb(255 255 255 / 6%);
+  color: #9ca3af;
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.action-logout:hover {
+  transform: translateY(-2px);
+  background: rgb(239 68 68 / 10%);
+  color: #ef4444;
+  border-color: rgb(239 68 68 / 20%);
+}
+
+html.dark .action-logout:hover {
+  background: rgb(239 68 68 / 15%);
+  color: #f87171;
+  border-color: rgb(239 68 68 / 25%);
+}
+
+.action-confirm {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 25%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 25%, transparent) 100%
+  );
+  color: var(--color-primary, #64748b);
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary, #94a3b8) 30%, transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 15%, transparent);
+}
+
+.action-confirm:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 35%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 35%, transparent) 100%
+  );
+  box-shadow: 0 6px 20px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 25%, transparent);
+}
+
+.action-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 修改密码表单 */
+.user-modal-password-form {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.user-modal-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: rgb(255 255 255 / 80%);
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+html.dark .user-modal-input {
+  background: rgb(0 0 0 / 30%);
+  border-color: rgb(255 255 255 / 10%);
+  color: #f3f4f6;
+}
+
+.user-modal-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #94a3b8);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 20%, transparent);
+}
+
+.user-modal-input::placeholder {
+  color: #9ca3af;
+}
+
+/* 下部区域 - Tapp */
+.user-modal-tapps {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem 1.5rem;
+  background: rgb(0 0 0 / 2%);
+  border-top: 1px solid rgb(0 0 0 / 6%);
+
+  /* 固定最小高度，防止 Tapp 加载导致高度变化 */
+  min-height: 120px;
+}
+
+html.dark .user-modal-tapps {
+  background: rgb(0 0 0 / 20%);
+  border-top-color: rgb(255 255 255 / 6%);
+}
+
+.user-modal-tapps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.user-modal-tapps-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+html.dark .user-modal-tapps-title {
+  color: #e5e7eb;
+}
+
+.user-modal-tapps-count-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.user-modal-tapps-count-btn:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-primary, #94a3b8) 10%,
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary, #94a3b8) 20%,
+    transparent
+  );
+}
+
+html.dark .user-modal-tapps-count-btn:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-primary, #94a3b8) 15%,
+    transparent
+  );
+}
+
+.user-modal-tapps-count-btn:hover .user-modal-tapps-arrow {
+  transform: translateX(2px);
+}
+
+.user-modal-tapps-arrow {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--color-primary, #94a3b8);
+  opacity: 0.6;
+  transition: all 0.25s ease;
+}
+
+.user-modal-tapps-count-btn:hover .user-modal-tapps-arrow {
+  opacity: 1;
+}
+
+.user-modal-tapps-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 30%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 30%, transparent) 100%
+  );
+  color: var(--color-primary, #64748b);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 20%, transparent);
+}
+
+.user-modal-tapps-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* 加载环已统一使用 Spinner 组件 */
+
+/* 最近使用的 Tapp */
+.user-modal-recent-tapps {
+  margin-bottom: 0.75rem;
+}
+
+.user-modal-recent-label {
+  font-size: 0.6875rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.user-modal-recent-list {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.user-modal-tapp-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  background: rgb(255 255 255 / 80%);
+  border: 1px solid rgb(0 0 0 / 6%);
+  border-radius: 0.875rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-width: 4.5rem;
+}
+
+html.dark .user-modal-tapp-item {
+  background: rgb(255 255 255 / 5%);
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.user-modal-tapp-item:hover {
+  transform: translateY(-3px);
+  background: white;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 10%);
+}
+
+html.dark .user-modal-tapp-item:hover {
+  background: rgb(255 255 255 / 10%);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 30%);
+}
+
+.user-modal-tapp-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 15%, transparent) 100%
+  );
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  color: var(--color-primary, #64748b);
+}
+
+html.dark .user-modal-tapp-icon {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 20%, transparent) 100%
+  );
+  color: var(--color-accent, #cbd5e1);
+}
+
+.user-modal-tapp-name {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #4b5563;
+  max-width: 4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.dark .user-modal-tapp-name {
+  color: #d1d5db;
+}
+
+/* Tapp 骨架屏加载状态 */
+.user-modal-tapp-skeleton {
+  min-width: 4.5rem;
+  min-height: 4rem;
+  background: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 4%) 25%,
+    rgb(0 0 0 / 8%) 50%,
+    rgb(0 0 0 / 4%) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+html.dark .user-modal-tapp-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 4%) 25%,
+    rgb(255 255 255 / 8%) 50%,
+    rgb(255 255 255 / 4%) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 无最近使用时的空状态 */
+.user-modal-recent-empty {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  padding: 0.5rem;
+}
+
+html.dark .user-modal-recent-empty {
+  color: #6b7280;
+}
+
+/* 移动端适配 */
+@media (width <= 640px) {
+  .user-modal {
+    width: 95%;
+    max-height: 90vh;
+    border-radius: 1.5rem;
+  }
+
+  .user-modal-hero {
+    padding: 2rem 1.25rem 1.25rem;
+  }
+
+  .user-modal-avatar-lg {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+
+  .user-modal-username {
+    font-size: 1.25rem;
+  }
+
+  .user-modal-tapps {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  .user-modal-action-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* ==========================================
+   用户弹窗遮罩层
+   ========================================== */
+.user-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 30%);
+  z-index: 10000;
+
+  /* 初始隐藏状态 */
+  opacity: 0;
+  visibility: hidden;
+  backdrop-filter: blur(0);
+
+  /* 初始状态不设置 transition */
+}
+
+/* 可见状态 - 只在这里启用 transition */
+.user-modal-overlay.animate-in {
+  opacity: 1;
+  visibility: visible;
+  backdrop-filter: blur(8px);
+  transition:
+    opacity 0.3s ease,
+    backdrop-filter 0.3s ease,
+    -webkit-backdrop-filter 0.3s ease,
+    visibility 0s linear 0s;
+}
+
+/* 关闭状态 */
+.user-modal-overlay.closing {
+  opacity: 0;
+  visibility: visible;
+  backdrop-filter: blur(0);
+  transition:
+    opacity 0.25s ease,
+    backdrop-filter 0.25s ease,
+    -webkit-backdrop-filter 0.25s ease,
+    visibility 0s linear 0.25s;
+}
+
+html.dark .user-modal-overlay {
+  background: rgb(0 0 0 / 50%);
+}
+
+/* ==========================================
+   仅登录弹窗样式
+   ========================================== */
+.user-modal-login-only {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  max-width: 400px;
+  background: rgb(255 255 255 / 95%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 1.75rem;
+  border: 1px solid rgb(255 255 255 / 30%);
+  box-shadow:
+    0 25px 80px rgb(0 0 0 / 15%),
+    0 10px 30px rgb(0 0 0 / 8%),
+    inset 0 1px 0 rgb(255 255 255 / 50%);
+  z-index: 10001;
+  padding: 2rem;
+
+  /* 初始隐藏状态 */
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.92);
+
+  /* 初始状态不设置 transition */
+  pointer-events: none;
+}
+
+/* 可见状态 - 只在这里启用 transition */
+.user-modal-login-only.animate-in {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+  transition:
+    opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    visibility 0s linear 0s;
+}
+
+/* 关闭状态 */
+.user-modal-login-only.closing {
+  opacity: 0;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(0.92);
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out,
+    visibility 0s linear 0.25s;
+  pointer-events: none;
+}
+
+html.dark .user-modal-login-only {
+  background: rgb(30 30 35 / 85%);
+  border-color: rgb(255 255 255 / 8%);
+  box-shadow:
+    0 25px 80px rgb(0 0 0 / 35%),
+    0 10px 30px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+/* 登录弹窗关闭按钮 */
+.login-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: rgb(0 0 0 / 5%);
+  border: none;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html.dark .login-close-btn {
+  background: rgb(255 255 255 / 8%);
+  color: #9ca3af;
+}
+
+.login-close-btn:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-primary, #94a3b8) 25%,
+    transparent
+  );
+  color: var(--color-primary, #94a3b8);
+  transform: rotate(90deg) scale(1.1);
+}
+
+.login-close-btn:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+/* 弹窗内部的容器透明化，避免双重背景 */
+.user-modal-login-only > div {
+  max-width: none;
+  width: 100%;
+}
+
+/* 覆盖 tailwind 的 glass rounded-2xl shadow-xl p-8 */
+.user-modal-login-only .glass,
+.user-modal-login-only .rounded-2xl,
+.user-modal-login-only .shadow-xl,
+.user-modal-login-only .p-8 {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+/* 恢复表单内部的间距 */
+.user-modal-login-only .space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+html.dark .user-modal-login-only .glass {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 暗色模式下的表单样式优化 */
+html.dark .user-modal-login-only label {
+  color: #e5e7eb;
+}
+
+html.dark .user-modal-login-only input {
+  background: rgb(255 255 255 / 8%);
+  border-color: rgb(255 255 255 / 15%);
+  color: #f3f4f6;
+}
+
+html.dark .user-modal-login-only input::placeholder {
+  color: #9ca3af;
+}
+
+html.dark .user-modal-login-only input:focus {
+  border-color: var(--color-primary, #94a3b8);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--color-primary, #94a3b8) 30%, transparent);
+}
+
+/* 暗色模式下分隔线 */
+html.dark .user-modal-login-only .border-t {
+  border-color: rgb(255 255 255 / 10%);
+}
+
+html.dark .user-modal-login-only .text-gray-500 {
+  color: #9ca3af;
+}
+
+html.dark .user-modal-login-only .bg-white {
+  background: rgb(30 30 35 / 85%);
+}
+
+/* 暗色模式下错误提示 */
+html.dark .user-modal-login-only .bg-red-50 {
+  background: rgb(220 38 38 / 15%);
+  border-color: rgb(220 38 38 / 30%);
+}
+
+html.dark .user-modal-login-only .text-red-800 {
+  color: #fca5a5;
+}
+
+/* ==================== 第三方账号绑定 ==================== */
+
+.user-modal-oauth-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 每个平台一张卡片 */
+.user-modal-oauth-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.875rem;
+  background: rgb(255 255 255 / 55%);
+  border: 1px solid rgb(0 0 0 / 6%);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.user-modal-oauth-row:hover {
+  background: rgb(255 255 255 / 80%);
+  border-color: rgb(0 0 0 / 10%);
+}
+
+html.dark .user-modal-oauth-row {
+  background: rgb(255 255 255 / 4%);
+  border-color: rgb(255 255 255 / 8%);
+}
+
+html.dark .user-modal-oauth-row:hover {
+  background: rgb(255 255 255 / 7%);
+  border-color: rgb(255 255 255 / 14%);
+}
+
+.user-modal-oauth-row.orphan {
+  opacity: 0.75;
+}
+
+/* Provider 图标：裸放 logo，不加底座，仅固定尺寸保证对齐 */
+.user-modal-oauth-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  color: #374151;
+}
+
+html.dark .user-modal-oauth-icon {
+  color: #e5e7eb;
+}
+
+/* 名称 + 状态两行 */
+.user-modal-oauth-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.user-modal-oauth-name {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.user-modal-oauth-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #888);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-modal-oauth-sub.bound {
+  color: #059669;
+}
+
+html.dark .user-modal-oauth-sub.bound {
+  color: #34d399;
+}
+
+.user-modal-oauth-disabled-tag {
+  font-size: 0.68rem;
+  font-weight: 400;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  background: rgb(255 159 10 / 15%);
+  color: #c97b06;
+}
+
+.user-modal-oauth-btn {
+  flex-shrink: 0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgb(128 128 128 / 25%);
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.user-modal-oauth-btn:hover:not(:disabled) {
+  background: rgb(128 128 128 / 10%);
+}
+
+.user-modal-oauth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.user-modal-oauth-btn.danger {
+  border-color: rgb(255 69 58 / 40%);
+  color: #e0443a;
+}
+
+.user-modal-oauth-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #888);
+}
+
+.user-modal-oauth-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: #e0443a;
+}
+
+/* 绑定入口按钮（与 action-password 同风格） */
+.action-oauth {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary, #94a3b8) 14%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary, #94a3b8) 14%, transparent) 100%
+  );
+  color: var(--color-primary, #64748b);
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary, #94a3b8) 25%, transparent);
+}
+
+/* OAuth 账户徽章（OIDC 提供方创建） */
+.badge-oauth {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  color: #6d28d9;
+  box-shadow: 0 2px 8px rgb(139 92 246 / 20%);
+}
+
+html.dark .badge-oauth {
+  background: linear-gradient(
+    135deg,
+    rgb(109 40 217 / 30%) 0%,
+    rgb(139 92 246 / 25%) 100%
+  );
+  color: #c4b5fd;
+}
+
+/* ==================== 弹窗二级页面（第三方绑定 / 修改密码） ==================== */
+
+.user-modal-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 320px;
+  animation: user-modal-page-in 0.25s ease;
+}
+
+@keyframes user-modal-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 头部：左上返回 + 标题（右侧给浮动关闭按钮留空间） */
+.user-modal-page-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 1rem 3.5rem 0.75rem 1rem;
+  border-bottom: 1px solid rgb(0 0 0 / 6%);
+}
+
+html.dark .user-modal-page-head {
+  border-bottom-color: rgb(255 255 255 / 8%);
+}
+
+.user-modal-page-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 与浮动关闭按钮 (.user-modal-close-float) 尺寸一致 */
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 5%);
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.user-modal-page-back:hover {
+  background: rgb(0 0 0 / 10%);
+}
+
+html.dark .user-modal-page-back {
+  background: rgb(255 255 255 / 8%);
+  color: #e5e7eb;
+}
+
+html.dark .user-modal-page-back:hover {
+  background: rgb(255 255 255 / 14%);
+}
+
+.user-modal-page-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+html.dark .user-modal-page-title {
+  color: #f3f4f6;
+}
+
+.user-modal-page-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+/* 二级页面中的密码表单占满内容区宽度 */
+.user-modal-page-body .user-modal-password-form {
+  max-width: none;
+  margin-top: 0;
+}
+
+/* 设置密码（纯 OAuth 账户）页的说明区 */
+.user-modal-password-intro {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-primary, #94a3b8) 8%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary, #94a3b8) 18%, transparent);
+}
+
+.user-modal-password-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+html.dark .user-modal-password-hint {
+  color: #d1d5db;
+}
+
+.user-modal-password-username {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+html.dark .user-modal-password-username {
+  color: #9ca3af;
+}
+
+.user-modal-password-username code {
+  margin-left: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.375rem;
+  background: rgb(0 0 0 / 6%);
+  font-weight: 600;
+  color: #1f2937;
+}
+
+html.dark .user-modal-password-username code {
+  background: rgb(255 255 255 / 10%);
+  color: #f3f4f6;
+}

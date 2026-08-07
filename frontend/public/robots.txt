@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /setup
+Disallow: /config
+Disallow: /tapp/playground
+Disallow: /tapp/detail/
+
+# Prefer the dynamic /robots.txt from the backend (absolute Sitemap when
+# FRONTEND_URL/BASE_URL is set). This static file is a fallback for hosts that
+# only serve frontend assets without proxying /robots.txt.
+Sitemap: /sitemap.xml

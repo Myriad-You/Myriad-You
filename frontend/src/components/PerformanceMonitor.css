@@ -1,0 +1,260 @@
+/* 开发态性能监控面板 — 最小样式，避免自身制造 jank */
+
+[data-perf-monitor].pm-root {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 9999;
+  max-width: 20rem;
+  color: #f3f4f6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  background: rgb(0 0 0 / 90%);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(8px);
+  contain: layout style;
+  user-select: none;
+}
+
+[data-perf-monitor].pm-expanded {
+  max-width: 22rem;
+}
+
+/* ── 顶栏 ── */
+
+.pm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.pm-bar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+}
+
+.pm-label {
+  font-weight: 700;
+  color: #d1d5db;
+  letter-spacing: 0.02em;
+}
+
+.pm-value {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pm-unit {
+  margin-left: 0.15rem;
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+.pm-toggle {
+  flex-shrink: 0;
+  padding: 0.15rem 0.35rem;
+  color: #9ca3af;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.pm-toggle:hover {
+  color: #fff;
+}
+
+/* ── 展开区 ── */
+
+.pm-body {
+  max-height: min(70vh, 32rem);
+  overflow: auto;
+  padding: 0 0.65rem 0.65rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  overscroll-behavior: contain;
+}
+
+.pm-body::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.pm-body::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 20%);
+  border-radius: 2px;
+}
+
+.pm-section {
+  padding-top: 0.55rem;
+}
+
+.pm-section + .pm-section {
+  margin-top: 0.35rem;
+  border-top: 1px solid rgb(255 255 255 / 6%);
+}
+
+.pm-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+  color: #d1d5db;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pm-hint {
+  font-weight: 400;
+  color: #6b7280;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 9px;
+}
+
+.pm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.2rem 0.5rem;
+}
+
+.pm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.pm-row-full {
+  grid-column: 1 / -1;
+}
+
+.pm-muted {
+  color: #9ca3af;
+}
+
+.pm-ok {
+  color: #4ade80;
+}
+
+.pm-warn {
+  color: #facc15;
+}
+
+.pm-bad {
+  color: #f87171;
+}
+
+/* 内存条：CSS 变量，无 100 个 width 类 */
+
+.pm-meter {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  background: #374151;
+  border-radius: 999px;
+}
+
+.pm-meter-fill {
+  width: var(--pm-pct, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: currentcolor;
+}
+
+/* 动画列表 */
+
+.pm-list {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 7.5rem;
+  overflow: auto;
+}
+
+.pm-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.25rem 0.35rem;
+  margin-bottom: 0.2rem;
+  background: rgb(255 255 255 / 5%);
+  border-radius: 0.25rem;
+  border-left: 2px solid #4ade80;
+}
+
+.pm-list-target {
+  color: #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 操作 */
+
+.pm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.pm-btn {
+  padding: 0.25rem 0.45rem;
+  color: #d1d5db;
+  font: inherit;
+  font-size: 10px;
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.pm-btn:hover:not(:disabled) {
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+}
+
+.pm-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pm-btn-ghost {
+  margin-top: 0.3rem;
+  background: transparent;
+  border-color: transparent;
+  color: #9ca3af;
+}
+
+.pm-btn-ghost:hover:not(:disabled) {
+  color: #e5e7eb;
+  background: rgb(255 255 255 / 6%);
+}
+
+.pm-btn-active {
+  color: #fca5a5;
+  background: rgb(239 68 68 / 20%);
+  border-color: rgb(239 68 68 / 35%);
+}
+
+.pm-toast {
+  margin-top: 0.45rem;
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+  color: #4ade80;
+  font-size: 10px;
+  background: rgb(74 222 128 / 10%);
+  border-radius: 0.25rem;
+}

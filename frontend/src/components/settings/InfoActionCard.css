@@ -1,0 +1,298 @@
+/**
+ * InfoActionCard — status / identity summary + action buttons.
+ * Aligns with ManagedList / settings glass tokens.
+ */
+
+/* 信息操作卡：内层 → 微透 */
+.info-action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+  box-sizing: border-box;
+}
+
+html.dark .info-action-card {
+  border-color: var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+}
+
+/* Nested under expand panels / other cards — no second surface */
+.info-action-card.is-embedded {
+  padding: 0.15rem 0 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.dark .info-action-card.is-embedded {
+  border: none;
+  background: transparent;
+}
+
+/* —— Tones —— */
+
+.info-action-card--info {
+  border-color: color-mix(in srgb, var(--cfg-accent) 28%, transparent);
+  background: color-mix(in srgb, var(--cfg-accent) 7%, transparent);
+}
+
+.info-action-card--success {
+  border-color: rgb(16 185 129 / 28%);
+  background: rgb(16 185 129 / 7%);
+}
+
+.info-action-card--warn {
+  border-color: rgb(245 158 11 / 30%);
+  background: rgb(245 158 11 / 8%);
+}
+
+.info-action-card--danger {
+  border-color: rgb(244 63 94 / 28%);
+  background: rgb(244 63 94 / 7%);
+}
+
+.info-action-card--muted {
+  opacity: 0.92;
+}
+
+html.dark .info-action-card--info {
+  border-color: color-mix(in srgb, var(--cfg-accent) 32%, transparent);
+  background: color-mix(in srgb, var(--cfg-accent) 10%, transparent);
+}
+
+html.dark .info-action-card--success {
+  border-color: rgb(16 185 129 / 32%);
+  background: rgb(16 185 129 / 10%);
+}
+
+html.dark .info-action-card--warn {
+  border-color: rgb(245 158 11 / 34%);
+  background: rgb(245 158 11 / 11%);
+}
+
+html.dark .info-action-card--danger {
+  border-color: rgb(244 63 94 / 32%);
+  background: rgb(244 63 94 / 10%);
+}
+
+/* —— Header —— */
+
+.info-action-card-header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.info-action-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--cfg-text-3);
+  line-height: 1;
+}
+
+html.dark .info-action-card-icon {
+  color: var(--cfg-text-3);
+}
+
+.info-action-card-title {
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--cfg-text-1);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+html.dark .info-action-card-title {
+  color: var(--cfg-text-1);
+}
+
+/* —— Body / fields —— */
+
+.info-action-card-body {
+  min-width: 0;
+}
+
+.info-action-card-empty {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--cfg-text-3);
+}
+
+html.dark .info-action-card-empty {
+  color: var(--cfg-text-3);
+}
+
+.info-action-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.info-action-card-field {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 7.5rem) minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  align-items: start;
+  min-width: 0;
+}
+
+@media (width <= 420px) {
+  .info-action-card-field {
+    grid-template-columns: 1fr;
+    gap: 0.12rem;
+  }
+}
+
+.info-action-card-field-label {
+  margin: 0;
+  padding-top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 550;
+  color: var(--cfg-text-2);
+  line-height: 1.35;
+}
+
+html.dark .info-action-card-field-label {
+  color: var(--cfg-text-2);
+}
+
+.info-action-card-field-value {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--cfg-text-1);
+  line-height: 1.4;
+}
+
+html.dark .info-action-card-field-value {
+  color: var(--cfg-text-1);
+}
+
+.info-action-card-field-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  padding-top: 0.12rem;
+}
+
+.info-action-card-field-value.is-mono .info-action-card-field-text {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.info-action-card-copy {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--cfg-text-3);
+  cursor: pointer;
+  transition:
+    color var(--sm-dur-fast) var(--sm-ease-standard),
+    background var(--sm-dur-fast) var(--sm-ease-standard);
+}
+
+.info-action-card-copy:hover {
+  color: var(--cfg-accent, #3b82f6);
+  background: color-mix(in srgb, var(--cfg-accent, #3b82f6) 10%, transparent);
+}
+
+.info-action-card-copy:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cfg-accent, #3b82f6) 35%, transparent);
+  color: var(--cfg-accent, #3b82f6);
+}
+
+.info-action-card-copy.is-copied {
+  color: #059669;
+}
+
+html.dark .info-action-card-copy {
+  color: var(--cfg-text-3);
+}
+
+html.dark .info-action-card-copy:hover {
+  color: var(--cfg-accent, #60a5fa);
+  background: color-mix(in srgb, var(--cfg-accent, #60a5fa) 14%, transparent);
+}
+
+html.dark .info-action-card-copy.is-copied {
+  color: #34d399;
+}
+
+.info-action-card-copy svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* —— Actions —— */
+
+.info-action-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding-top: 0.1rem;
+  padding-bottom: 0.05rem;
+}
+
+.info-action-card-actions > .settings-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (width <= 420px) {
+  .info-action-card-actions {
+    flex-wrap: wrap;
+  }
+
+  .info-action-card-actions > .settings-btn {
+    flex: 1 1 auto;
+    min-width: min(100%, 6.5rem);
+    justify-content: center;
+  }
+}
+
+.info-action-card-footer {
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--cfg-text-3);
+  line-height: 1.4;
+}
+
+html.dark .info-action-card-footer {
+  color: var(--cfg-text-3);
+}

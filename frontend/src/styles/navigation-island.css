@@ -1,0 +1,327 @@
+/* ============================================
+   导航岛样式 (Dynamic Island)
+   从 index.astro 提取
+   ============================================ */
+
+/* 导航容器 */
+.nav-container {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
+@media (width >= 768px) {
+  .nav-container {
+    left: 1.5rem;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+}
+
+/* Dynamic Island - 主岛 */
+.dynamic-island {
+  background: rgb(255 255 255 / 50%);
+  backdrop-filter: blur(20px);
+  border-radius: 30px;
+  padding: 10px;
+  border: 2px solid rgb(99 102 241 / 15%);
+  border: 2px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 80%);
+  transition:
+    height 0.45s cubic-bezier(0.25, 1.3, 0.5, 1),
+    width 0.45s cubic-bezier(0.25, 1.3, 0.5, 1),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  max-width: 95vw;
+}
+
+html.dark .dynamic-island {
+  background: rgb(26 26 26 / 50%);
+  border: 2px solid rgb(99 102 241 / 20%);
+  border: 2px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 10%);
+}
+
+.dynamic-island:hover {
+  background: rgb(255 255 255 / 60%);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 90%);
+  border-color: rgb(99 102 241 / 25%);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+html.dark .dynamic-island:hover {
+  background: rgb(26 26 26 / 60%);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 15%);
+}
+
+/* 流动渐变边框（自 astro 页面级样式迁移，原双份声明已删） */
+.dynamic-island::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 26px;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 60%, transparent),
+    color-mix(in srgb, var(--color-secondary) 40%, transparent),
+    color-mix(in srgb, var(--color-accent) 40%, transparent),
+    color-mix(in srgb, var(--color-primary) 60%, transparent)
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: border-flow 8s linear infinite;
+  background-size: 300% 300%;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.dynamic-island:hover::before {
+  opacity: 1;
+}
+
+@keyframes border-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 桌面端纵向岛限高（自 astro 迁移；padding/max-width 由上方基础规则统一） */
+@media (width >= 768px) {
+  .dynamic-island {
+    max-height: 85vh;
+  }
+}
+
+/* 折叠状态 */
+.dynamic-island.collapsed {
+  padding: 10px;
+}
+
+/* 折叠态过渡（历史 API，当前组件未使用 collapsed class）
+ * 注意：默认态不要写 transform，否则会与移动端内层横向滚动叠在同一
+ * 合成层上，加重滑动残影。transform 仅在真正折叠时施加。 */
+.dynamic-island > .nav-island-scroll,
+.dynamic-island > div:first-child {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+  opacity: 1;
+}
+
+.dynamic-island.collapsed > .nav-island-scroll,
+.dynamic-island.collapsed > div:first-child {
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  position: absolute;
+}
+
+/* 导航项 */
+.nav-item {
+  position: relative;
+  padding: 12px;
+  border-radius: 20px;
+  z-index: 10;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: all 0.2s ease;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-item:hover {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  transform: scale(1.08) translateZ(0);
+  box-shadow: 0 3px 10px
+    color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.nav-item:active {
+  transform: scale(1.02) translateZ(0);
+  box-shadow: 0 2px 6px
+    color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+html.dark .nav-item {
+  color: var(--text-secondary);
+}
+
+html.dark .nav-item:hover {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: 0 3px 12px
+    color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+html.dark .nav-item:active {
+  transform: scale(1.02) translateZ(0);
+  box-shadow: 0 2px 6px
+    color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* 焦点状态（键盘导航，自 astro 迁移） */
+.nav-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 18px;
+}
+
+/* 选中状态 */
+[aria-current='page'].nav-item {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 15%, white);
+  box-shadow: 0 2px 10px
+    color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+html.dark [aria-current='page'].nav-item {
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  box-shadow:
+    0 2px 10px color-mix(in srgb, var(--color-primary) 35%, transparent),
+    inset 0 1px 0 0 rgb(255 255 255 / 10%);
+}
+
+html.dark [aria-current='page'].nav-item::after {
+  box-shadow: 0 0 12px var(--color-primary);
+}
+
+[aria-current='page'].nav-item::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+
+/* 导航组 */
+.nav-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+@media (width >= 768px) {
+  .nav-group {
+    flex-direction: column;
+  }
+}
+
+/* 移动端优化 */
+@media (width <= 767px) {
+  .nav-container {
+    inset: auto auto 1rem 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .dynamic-island {
+    /* 外层只留薄边；垂直呼吸空间交给 .nav-island-scroll 内边距 */
+    padding: 4px 6px;
+    max-width: calc(100vw - 2rem);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    /* 圆角裁剪与毛玻璃同层；滚动见 .nav-island-scroll（AppLayout.css） */
+    overflow: hidden;
+  }
+
+  /* 选中点：仍在按钮下方，但由 scroll 内边距承接，避免被 overflow 裁掉 */
+  [aria-current='page'].nav-item::after {
+    left: 50% !important;
+    top: auto !important;
+    bottom: -4px !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* 以下均自 astro 页面级样式迁移（原双份声明已删） */
+
+  /* 渐变边框动画降档：省电，静态呈现 */
+  .dynamic-island::before {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  /* 图标间距（压过 Tailwind gap-1 的 4px） */
+  .dynamic-island > .nav-island-scroll {
+    gap: 6px;
+  }
+
+  /* 交互元素禁用文本选择 */
+  .dynamic-island,
+  .nav-item,
+  button {
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* 小屏收紧（自 astro 迁移） */
+@media (width <= 480px) {
+  .dynamic-island > .nav-island-scroll {
+    gap: 4px;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* 安全区域适配（刘海屏/底部指示条；须位于上方 inset !important 之后才能生效） */
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (width <= 767px) {
+    .nav-container {
+      bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  .nav-item:hover {
+    transform: none;
+    background: transparent;
+  }
+
+  .nav-item:active {
+    transform: scale(0.95);
+    background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    transition-duration: 0.1s;
+  }
+
+  /* 触摸反馈（自 astro 迁移） */
+  .dynamic-island:active {
+    transform: scale(0.98);
+  }
+}
+
+/* 沉浸模式 - 隐藏导航岛 */
+.nav-container.immersive {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease !important;
+}

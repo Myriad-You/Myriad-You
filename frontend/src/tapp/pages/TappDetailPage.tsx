@@ -1,0 +1,969 @@
+/**
+ * Tapp 详情 / 配置页
+ * 对齐新版设置页：SettingSection + SettingGroup + 设置原语
+ */
+
+import type { ToastType } from '../../components/Toast'
+import type { TappInstance, TappPermission, TappSettingItem } from '../types'
+import {
+  FaCog,
+  FaDownload,
+  FaExclamationTriangle,
+  FaLock,
+  FaPause,
+  FaPlay,
+  FaTrash,
+  LuChevronLeft,
+} from '@lib/icons'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from 'react'
+import { useNavigate } from 'react-router-dom'
+import AnimatedView from '../../components/AnimatedView'
+import { Spinner } from '../../components/Spinner'
+import Toast from '../../components/Toast'
+import {
+  getTappPermissionGuide,
+  guideDomProps,
+  InfoActionCard,
+  InputItem,
+  NumberItem,
+  SegmentedControl,
+  SelectItem,
+  SettingGroup,
+  SettingsButton,
+  SettingSection,
+  SettingTitleGuideEntry,
+  SwitchItem,
+  tappPermissionGuidePath,
+  useSettingGuide,
+} from '../../components/settings'
+import { SettingItemWrapper } from '../../components/settings/items/SettingItemWrapper'
+import { useAuth } from '../../contexts/AuthContext'
+import { useI18n } from '../../contexts/I18nContext'
+import { usePageSeo } from '../../hooks/usePageSeo'
+import { sanitizeUrl } from '../../utils/inputSanitizer'
+import {
+  canAccessModuleVisibility,
+  useModuleVisibilityPreferences,
+} from '../../utils/moduleVisibility'
+import { TappIcon } from '../components/TappIcon'
+import { UninstallConfirmDialog } from '../components/UninstallConfirmDialog'
+import { PERMISSION_CONFIG } from '../constants/permissions'
+import { getTappRuntime } from '../runtime'
+import { PERMISSION_LEVELS } from '../runtime/permissionConfig'
+import * as TappApiService from '../services/TappApiService'
+import type { TappVisibility } from '../services/TappLifecycleApi'
+import { resolveManifestText } from '../utils/manifestLocale'
+import { buildTappDetailPageSeo } from '../utils/tappPageSeo'
+import { getTappIconStyle } from '../utils/tappColors'
+import '../../components/ConfigForm.css'
+import './TappDetailPage.css'
+
+interface TappDetailPageProps {
+  tappId: string
+}
+
+export function TappDetailPage({ tappId }: TappDetailPageProps) {
+  const navigate = useNavigate()
+  const { t, format, locale } = useI18n()
+  const { catalog: g, bindGuide, renderGuide } = useSettingGuide()
+  const { isAuthenticated, hasChecked } = useAuth()
+  const { preferences: moduleVisibility } = useModuleVisibilityPreferences()
+  const moduleOpenToAll = canAccessModuleVisibility(
+    moduleVisibility.modules.tapp,
+    { isAuthenticated: false, isAdmin: false },
+  )
+
+  const [tapp, setTapp] = useState<TappInstance | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isRunning, setIsRunning] = useState(false)
+  const [settingsValues, setSettingsValues] = useState<Record<string, unknown>>(
+    {},
+  )
+  const [settingsSaving, setSettingsSaving] = useState<string | null>(null)
+  /** 本地输入缓存，避免中文输入被打断 */
+  const [localInputValues, setLocalInputValues] = useState<
+    Record<string, string>
+  >({})
+  const pendingChangesRef = useRef<Record<string, unknown>>({})
+  const debounceTimersRef = useRef<
+    Record<string, ReturnType<typeof setTimeout>>
+  >({})
+  const [toastMessage, setToastMessage] = useState<string>('')
+  const [toastType, setToastType] = useState<ToastType>('info')
+  const [showUninstallDialog, setShowUninstallDialog] = useState(false)
+  const [uninstallAnchor, setUninstallAnchor] = useState<HTMLElement | null>(
+    null,
+  )
+  const [appVisibility, setAppVisibility] = useState<TappVisibility>('all')
+  const [visibilitySaving, setVisibilitySaving] = useState(false)
+  const runtime = getTappRuntime()
+
+  usePageSeo(
+    useMemo(
+      () =>
+        buildTappDetailPageSeo({
+          tapp,
+          tappId,
+          locale,
+          moduleOpenToAll,
+        }),
+      [tapp, tappId, locale, moduleOpenToAll],
+    ),
+  )
+
+  const showToastMessage = useCallback(
+    (message: string, type: ToastType = 'info') => {
+      setToastType(type)
+      setToastMessage(message)
+    },
+    [],
+  )
+
+  const loadSettings = useCallback(
+    async (manifest: TappInstance['manifest']) => {
+      if (!manifest.settings?.length) return
+
+      try {
+        const storedSettings = await TappApiService.getTappSettings(tappId)
+        const values: Record<string, unknown> = {}
+        for (const setting of manifest.settings) {
+          values[setting.key] =
+            storedSettings[setting.key] ?? setting.defaultValue
+        }
+        setSettingsValues(values)
+      } catch (err) {
+        console.error('Failed to load settings:', err)
+      }
+    },
+    [tappId],
+  )
+
+  const saveSetting = useCallback(
+    async (key: string, value: unknown, showHint = true) => {
+      setSettingsSaving(key)
+      try {
+        await TappApiService.setTappSetting(tappId, key, value)
+        setSettingsValues((prev) => ({ ...prev, [key]: value }))
+        delete pendingChangesRef.current[key]
+        if (showHint) {
+          showToastMessage(t.tapp.settingSaved, 'success')
+        }
+      } catch (err) {
+        console.error('Failed to save setting:', err)
+        showToastMessage(t.tapp.settingSaveFailed, 'error')
+      } finally {
+        setSettingsSaving(null)
+      }
+    },
+    [tappId, t, showToastMessage],
+  )
+
+  const handleInputChange = useCallback(
+    (key: string, value: string) => {
+      setLocalInputValues((prev) => ({ ...prev, [key]: value }))
+      pendingChangesRef.current[key] = value
+
+      if (debounceTimersRef.current[key]) {
+        clearTimeout(debounceTimersRef.current[key])
+      }
+
+      debounceTimersRef.current[key] = setTimeout(() => {
+        if (pendingChangesRef.current[key] !== undefined) {
+          void saveSetting(key, pendingChangesRef.current[key])
+        }
+      }, 2000)
+    },
+    [saveSetting],
+  )
+
+  const handleNumberChange = useCallback(
+    (key: string, value: number) => {
+      setLocalInputValues((prev) => ({ ...prev, [key]: String(value) }))
+      pendingChangesRef.current[key] = value
+
+      if (debounceTimersRef.current[key]) {
+        clearTimeout(debounceTimersRef.current[key])
+      }
+
+      debounceTimersRef.current[key] = setTimeout(() => {
+        if (pendingChangesRef.current[key] !== undefined) {
+          void saveSetting(key, pendingChangesRef.current[key])
+        }
+      }, 2000)
+    },
+    [saveSetting],
+  )
+
+  const handleInputBlur = useCallback(
+    (key: string, type: 'input' | 'number') => {
+      if (debounceTimersRef.current[key]) {
+        clearTimeout(debounceTimersRef.current[key])
+        delete debounceTimersRef.current[key]
+      }
+
+      if (pendingChangesRef.current[key] !== undefined) {
+        const value =
+          type === 'number'
+            ? Number(pendingChangesRef.current[key])
+            : pendingChangesRef.current[key]
+        void saveSetting(key, value)
+      }
+    },
+    [saveSetting],
+  )
+
+  const saveAllPendingChanges = useCallback(async () => {
+    const keys = Object.keys(pendingChangesRef.current)
+    for (const key of keys) {
+      await saveSetting(key, pendingChangesRef.current[key], false)
+    }
+  }, [saveSetting])
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const keys = Object.keys(pendingChangesRef.current)
+      for (const key of keys) {
+        void TappApiService.setTappSetting(
+          tappId,
+          key,
+          pendingChangesRef.current[key],
+        )
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      Object.values(debounceTimersRef.current).forEach(clearTimeout)
+      void saveAllPendingChanges()
+    }
+  }, [tappId, saveAllPendingChanges])
+
+  useEffect(() => {
+    const loadTapp = async () => {
+      try {
+        const instance = runtime.getTapp(tappId)
+        if (!instance) {
+          setError(t.tapp.appNotExist)
+          setLoading(false)
+          return
+        }
+
+        setTapp(instance)
+        setIsRunning(runtime.isRunning(tappId))
+        setAppVisibility(instance.visibility === 'admin' ? 'admin' : 'all')
+
+        // 设置属于已登录查看者的控制面数据；访客只使用 manifest 默认值。
+        if (hasChecked && isAuthenticated) {
+          await loadSettings(instance.manifest)
+        }
+
+        setLoading(false)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t.tapp.loadAppFailed)
+        setLoading(false)
+      }
+    }
+
+    void loadTapp()
+
+    const unsubStarted = runtime.on('tapp:started', (data) => {
+      if ((data as { id: string }).id === tappId) setIsRunning(true)
+    })
+    const unsubStopped = runtime.on('tapp:stopped', (data) => {
+      if ((data as { id: string }).id === tappId) setIsRunning(false)
+    })
+
+    return () => {
+      unsubStarted()
+      unsubStopped()
+    }
+  }, [tappId, runtime, hasChecked, isAuthenticated, loadSettings, t])
+
+  const goBack = useCallback(() => {
+    navigate('/tapp')
+  }, [navigate])
+
+  const handleToggleRunning = useCallback(async () => {
+    try {
+      if (isRunning) {
+        await runtime.stopTapp(tappId)
+      } else {
+        await runtime.startTapp(tappId)
+        void import('../../utils/analyticsEvents').then(
+          ({ trackProductEvent, AnalyticsEvents }) => {
+            trackProductEvent(AnalyticsEvents.TAPP_RUN, {
+              target: tappId,
+              throttleMs: 2000,
+            })
+          },
+        )
+        navigate(`/tapp/run/${tappId}`)
+      }
+    } catch (err) {
+      console.error('Failed to toggle Tapp:', err)
+    }
+  }, [runtime, tappId, isRunning, navigate])
+
+  const handleUninstall = useCallback(
+    (event?: ReactMouseEvent<HTMLButtonElement>) => {
+      const el = event?.currentTarget
+      setUninstallAnchor(el instanceof HTMLElement ? el : null)
+      setShowUninstallDialog(true)
+    },
+    [],
+  )
+
+  const handleConfirmUninstall = useCallback(
+    async (keepData: boolean) => {
+      try {
+        await runtime.uninstallTapp(tappId, { keepData })
+        setShowUninstallDialog(false)
+        setUninstallAnchor(null)
+        goBack()
+      } catch (err) {
+        console.error('Failed to uninstall Tapp:', err)
+        showToastMessage(t.tapp.uninstallFailed || 'Uninstall failed', 'error')
+        throw err
+      }
+    },
+    [runtime, tappId, goBack, t, showToastMessage],
+  )
+
+  const handleExport = useCallback(async () => {
+    try {
+      await TappApiService.exportTapp(tappId)
+    } catch (err) {
+      console.error('Failed to export Tapp:', err)
+      showToastMessage(t.tapp.exportFailed || 'Export failed', 'error')
+    }
+  }, [tappId, t, showToastMessage])
+
+  const handleVisibilityChange = useCallback(
+    async (visibility: TappVisibility) => {
+      if (visibility === appVisibility || visibilitySaving) return
+      const previous = appVisibility
+      setAppVisibility(visibility)
+      setVisibilitySaving(true)
+      try {
+        await TappApiService.setTappVisibility(tappId, visibility)
+        setTapp((prev) => (prev ? { ...prev, visibility } : prev))
+        showToastMessage(t.tapp.appVisibilitySaved, 'success')
+        void runtime.syncFromBackend(true)
+      } catch (err) {
+        console.error('Failed to update visibility:', err)
+        setAppVisibility(previous)
+        showToastMessage(t.tapp.appVisibilitySaveFailed, 'error')
+      } finally {
+        setVisibilitySaving(false)
+      }
+    },
+    [
+      appVisibility,
+      visibilitySaving,
+      tappId,
+      t,
+      showToastMessage,
+      runtime,
+    ],
+  )
+
+  const pageShell = (body: ReactNode) => (
+    <AnimatedView className="min-h-screen px-4 sm:px-6 pt-20 pb-24 md:pb-12">
+      <div className="tapp-detail-page">{body}</div>
+    </AnimatedView>
+  )
+
+  if (loading) {
+    return pageShell(
+      <div className="config-section setting-section">
+        <div className="tapp-detail-state">
+          <Spinner size="xl" color="primary" />
+        </div>
+      </div>,
+    )
+  }
+
+  if (error || !tapp) {
+    return pageShell(
+      <div className="config-section setting-section">
+        <div className="tapp-detail-state">
+          <FaExclamationTriangle className="tapp-detail-state-icon" />
+          <h3 className="tapp-detail-state-title">{t.tapp.cannotLoadApp}</h3>
+          <p className="tapp-detail-state-desc">
+            {error || t.tapp.appNotExist}
+          </p>
+          <SettingsButton
+            variant="primary"
+            icon={<LuChevronLeft />}
+            onClick={goBack}
+          >
+            {t.tapp.backToAppList}
+          </SettingsButton>
+        </div>
+      </div>,
+    )
+  }
+
+  const { manifest } = tapp
+  const { name: displayName, description: displayDescription } =
+    resolveManifestText(manifest, locale)
+  const authorUrl = manifest.author?.url ? sanitizeUrl(manifest.author.url) : ''
+  const homepageUrl = manifest.homepage ? sanitizeUrl(manifest.homepage) : ''
+  const repositoryUrl = manifest.repository
+    ? sanitizeUrl(manifest.repository)
+    : ''
+  const canManageSettings =
+    tapp.userRole === 'admin' ||
+    (tapp.userRole === 'user' && tapp.isTemporary === true)
+  const canManageVisibility =
+    tapp.userRole === 'admin' && tapp.isAdminTapp === true
+  const canStartStop =
+    tapp.userRole === 'admin' ||
+    (tapp.userRole === 'user' && tapp.isTemporary === true)
+  const canUninstall =
+    tapp.userRole === 'admin' ||
+    (tapp.userRole === 'user' && tapp.isTemporary === true)
+
+  const iconStyle = getTappIconStyle(manifest)
+  const hasManifestSettings = Boolean(manifest.settings?.length)
+  /** 已登录用户始终展示应用设置组（含空态 / 只读说明） */
+  const showSettingsGroup = isAuthenticated
+
+  const settingsGroupDesc = hasManifestSettings
+    ? canManageSettings
+      ? t.tapp.customizeBehavior
+      : t.tapp.settingsReadOnly
+    : canManageVisibility
+      ? t.tapp.appVisibilityDesc
+      : t.tapp.noSettingsDesc
+
+  const levelLabels = {
+    basic: t.tapp.basicPermission,
+    elevated: t.tapp.elevatedPermission,
+    privileged: t.tapp.privilegedPermission,
+  } as const
+
+  /** 高等级优先：特权 → 提升 → 基础 */
+  const permissionLevels = ['privileged', 'elevated', 'basic'] as const
+  type PermissionLevelKey = (typeof permissionLevels)[number]
+  type PermissionListItem = {
+    key: TappPermission
+    label: string
+    description: string
+    Icon: (typeof PERMISSION_CONFIG)[keyof typeof PERMISSION_CONFIG]['icon']
+  }
+
+  const permissionsByLevel: Record<PermissionLevelKey, PermissionListItem[]> = {
+    basic: [],
+    elevated: [],
+    privileged: [],
+  }
+  for (const permission of tapp.grantedPermissions) {
+    const config = PERMISSION_CONFIG[permission]
+    if (!config) continue
+    const level = PERMISSION_LEVELS[permission]
+    permissionsByLevel[level].push({
+      key: permission,
+      label: String(
+        t.tapp[config.labelKey as keyof typeof t.tapp] ?? permission,
+      ),
+      description: String(
+        t.tapp[config.descriptionKey as keyof typeof t.tapp] ?? '',
+      ),
+      Icon: config.icon,
+    })
+  }
+
+  const renderSettingControl = (setting: TappSettingItem) => {
+    const busy = settingsSaving === setting.key
+    const disabled = !canManageSettings || busy
+
+    if (setting.type === 'toggle') {
+      return (
+        <SwitchItem
+          key={setting.key}
+          itemKey={setting.key}
+          label={setting.label}
+          description={setting.description}
+          value={settingsValues[setting.key] === true}
+          onChange={(checked) => void saveSetting(setting.key, checked)}
+          disabled={disabled}
+          loading={busy}
+          layout="horizontal"
+        />
+      )
+    }
+
+    if (setting.type === 'select') {
+      return (
+        <SelectItem
+          key={setting.key}
+          itemKey={setting.key}
+          label={setting.label}
+          description={setting.description}
+          value={String(settingsValues[setting.key] ?? '')}
+          onChange={(v) => void saveSetting(setting.key, v)}
+          options={(setting.options ?? []).map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+          }))}
+          disabled={disabled}
+          loading={busy}
+          layout="horizontal"
+        />
+      )
+    }
+
+    if (setting.type === 'input') {
+      return (
+        <InputItem
+          key={setting.key}
+          itemKey={setting.key}
+          label={setting.label}
+          description={setting.description}
+          value={
+            localInputValues[setting.key] ??
+            String(settingsValues[setting.key] ?? '')
+          }
+          onChange={(v) => handleInputChange(setting.key, v)}
+          onBlur={() => handleInputBlur(setting.key, 'input')}
+          placeholder={setting.placeholder}
+          disabled={disabled}
+          loading={busy}
+          layout="horizontal"
+        />
+      )
+    }
+
+    if (setting.type === 'number') {
+      const numValue =
+        localInputValues[setting.key] !== undefined
+          ? Number(localInputValues[setting.key])
+          : Number(settingsValues[setting.key] ?? setting.min ?? 0)
+      return (
+        <NumberItem
+          key={setting.key}
+          itemKey={setting.key}
+          label={setting.label}
+          description={setting.description}
+          value={Number.isFinite(numValue) ? numValue : 0}
+          onChange={(v) => handleNumberChange(setting.key, v)}
+          onBlur={() => handleInputBlur(setting.key, 'number')}
+          min={setting.min}
+          max={setting.max}
+          step={setting.step}
+          disabled={disabled}
+          loading={busy}
+          layout="horizontal"
+        />
+      )
+    }
+
+    if (setting.type === 'color') {
+      return (
+        <SettingItemWrapper
+          key={setting.key}
+          itemKey={setting.key}
+          label={setting.label}
+          description={setting.description}
+          disabled={disabled}
+          layout="horizontal"
+        >
+          <input
+            type="color"
+            className="tapp-detail-color-input"
+            value={String(settingsValues[setting.key] ?? '#6366f1')}
+            onChange={(e) => void saveSetting(setting.key, e.target.value)}
+            disabled={disabled}
+            aria-label={setting.label}
+            title={setting.label}
+          />
+        </SettingItemWrapper>
+      )
+    }
+
+    return null
+  }
+
+  const overviewActions = [
+    ...(canStartStop
+      ? [
+          {
+            key: 'toggle-run',
+            label: isRunning ? t.tapp.stop : t.tapp.start,
+            onClick: () => void handleToggleRunning(),
+            variant: (isRunning ? 'secondary' : 'primary') as
+              | 'primary'
+              | 'secondary',
+            icon: isRunning ? <FaPause /> : <FaPlay />,
+          },
+        ]
+      : []),
+    {
+      key: 'export',
+      label: t.tapp.export || 'Export',
+      onClick: () => void handleExport(),
+      variant: 'secondary' as const,
+      icon: <FaDownload />,
+    },
+    ...(canUninstall
+      ? [
+          {
+            key: 'uninstall',
+            label: t.tapp.uninstall,
+            onClick: handleUninstall,
+            variant: 'danger' as const,
+            icon: <FaTrash />,
+          },
+        ]
+      : []),
+  ]
+
+  const infoFields = [
+    {
+      key: 'id',
+      label: t.tapp.appId,
+      value: manifest.id,
+      mono: true,
+    },
+    {
+      key: 'version',
+      label: t.tapp.version,
+      value: `v${manifest.version}`,
+      copyable: false as const,
+    },
+    ...(manifest.author
+      ? [
+          {
+            key: 'author',
+            label: t.tapp.author,
+            value: (
+              <span>
+                {manifest.author.name}
+                {manifest.author.email ? (
+                  <>
+                    <br />
+                    <span className="settings-text-3">
+                      {manifest.author.email}
+                    </span>
+                  </>
+                ) : null}
+                {authorUrl ? (
+                  <>
+                    <br />
+                    <a
+                      href={authorUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="settings-text-2"
+                      style={{
+                        color: 'var(--cfg-accent)',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      {t.tapp.homepage}
+                    </a>
+                  </>
+                ) : null}
+              </span>
+            ),
+            copyText: manifest.author.name,
+          },
+        ]
+      : []),
+    {
+      key: 'installed',
+      label: t.tapp.installedAt,
+      value: new Date(tapp.installedAt).toLocaleDateString(),
+      copyable: false as const,
+    },
+    ...(tapp.lastRunAt
+      ? [
+          {
+            key: 'lastRun',
+            label: t.tapp.lastRunAt,
+            value: new Date(tapp.lastRunAt).toLocaleString(),
+            copyable: false as const,
+          },
+        ]
+      : []),
+    ...(homepageUrl
+      ? [
+          {
+            key: 'homepage',
+            label: t.tapp.homepage,
+            value: (
+              <a
+                href={homepageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: 'var(--cfg-accent)',
+                  textDecoration: 'underline',
+                }}
+              >
+                {t.tapp.visit}
+              </a>
+            ),
+            copyText: homepageUrl,
+          },
+        ]
+      : []),
+    ...(repositoryUrl
+      ? [
+          {
+            key: 'repository',
+            label: t.tapp.repository,
+            value: (
+              <a
+                href={repositoryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: 'var(--cfg-accent)',
+                  textDecoration: 'underline',
+                }}
+              >
+                {t.tapp.visit}
+              </a>
+            ),
+            copyText: repositoryUrl,
+          },
+        ]
+      : []),
+  ]
+
+  return pageShell(
+    <>
+      <SettingSection
+        sectionId="tapp-detail"
+        title={displayName}
+        description={displayDescription || undefined}
+        detail={displayDescription || g.tapp.detail.what}
+        showResetPage={false}
+        helpToggle
+        {...bindGuide('tapp.detail', g.tapp.detail)}
+        icon={
+          <span
+            className={`tapp-detail-icon ${iconStyle.className}`}
+            style={iconStyle.style}
+          >
+            <TappIcon
+              icon={manifest.icon}
+              iconSvg={manifest.iconSvg}
+              name={displayName}
+              sizeClass="w-7 h-7"
+              textSizeClass="text-xl"
+            />
+          </span>
+        }
+        titleExtra={
+          <span className="tapp-detail-status">
+            <span
+              className={`tapp-detail-status-dot${
+                isRunning ? ' is-running' : ''
+              }`}
+              aria-hidden
+            />
+            {isRunning ? t.tapp.running : t.tapp.stopped}
+          </span>
+        }
+        headerLeading={
+          <button
+            type="button"
+            className="section-header-back"
+            onClick={goBack}
+            aria-label={t.tapp.backToAppList}
+          >
+            <LuChevronLeft size={18} aria-hidden />
+            <span>{t.common.back}</span>
+          </button>
+        }
+      >
+        {/* 应用信息 + 主操作 */}
+        <SettingGroup
+          id="tapp-overview"
+          title={t.tapp.appInfo}
+          description={t.tapp.detailInfo}
+          {...bindGuide('tapp.overview', g.tapp.overview)}
+        >
+          <InfoActionCard fields={infoFields} actions={overviewActions} />
+        </SettingGroup>
+
+        {/* 应用设置 */}
+        {showSettingsGroup && (
+          <SettingGroup
+            id="tapp-app-settings"
+            title={t.tapp.appSettings}
+            description={settingsGroupDesc}
+            icon={<FaCog />}
+            {...bindGuide('tapp.appSettings', g.tapp.appSettings)}
+          >
+            {canManageVisibility && (
+              <SettingItemWrapper
+                itemKey="tapp-visibility"
+                label={t.tapp.appVisibility}
+                description={t.tapp.appVisibilityDesc}
+                layout="horizontal"
+                disabled={visibilitySaving}
+                {...bindGuide('tapp.appVisibility', g.tapp.appVisibility)}
+              >
+                <SegmentedControl
+                  size="sm"
+                  columns={2}
+                  value={appVisibility}
+                  disabled={visibilitySaving}
+                  options={[
+                    {
+                      value: 'all' as const,
+                      label: t.tapp.appVisibilityAll,
+                    },
+                    {
+                      value: 'admin' as const,
+                      label: t.tapp.appVisibilityAdmin,
+                    },
+                  ]}
+                  onChange={handleVisibilityChange}
+                  ariaLabel={t.tapp.appVisibility}
+                />
+              </SettingItemWrapper>
+            )}
+
+            {hasManifestSettings
+              ? manifest.settings!.map(renderSettingControl)
+              : !canManageVisibility && (
+                  <p className="settings-text-3" style={{ margin: 0 }}>
+                    {t.tapp.noSettingsAvailable}
+                  </p>
+                )}
+          </SettingGroup>
+        )}
+
+        {/* 权限：按等级分组，等级内部三列 */}
+        <SettingGroup
+          id="tapp-permissions"
+          title={t.tapp.permissions}
+          description={format(t.tapp.grantedPermissions, {
+            count: tapp.grantedPermissions.length,
+          })}
+          icon={<FaLock />}
+          {...bindGuide('tapp.permissions', g.tapp.permissions)}
+        >
+          {tapp.grantedPermissions.length === 0 ? (
+            <p className="settings-text-3" style={{ margin: 0 }}>
+              {t.tapp.noPermissions}
+            </p>
+          ) : (
+            <div className="tapp-perm-levels">
+              {permissionLevels.map((level) => {
+                const items = permissionsByLevel[level]
+                if (items.length === 0) return null
+                const levelGuide =
+                  level === 'privileged'
+                    ? g.tapp.permPrivileged
+                    : level === 'elevated'
+                      ? g.tapp.permElevated
+                      : g.tapp.permBasic
+                const levelGuidePath =
+                  level === 'privileged'
+                    ? 'tapp.permPrivileged'
+                    : level === 'elevated'
+                      ? 'tapp.permElevated'
+                      : 'tapp.permBasic'
+                return (
+                  <SettingGroup
+                    key={level}
+                    toc={false}
+                    className={`tapp-perm-group tapp-perm-group--${level}`}
+                    title={levelLabels[level]}
+                    titleExtra={
+                      <span
+                        className={`tapp-perm-level tapp-perm-level--${level}`}
+                      >
+                        {items.length}
+                      </span>
+                    }
+                    {...bindGuide(levelGuidePath, levelGuide)}
+                  >
+                    {/* 等级内部三列排布权限卡（只读 + 单项指南） */}
+                    <div className="tapp-perm-cards checkbox-group-options">
+                      {items.map(({ key, label, description, Icon }) => {
+                        const guidePath = tappPermissionGuidePath(key)
+                        const guide = renderGuide(
+                          getTappPermissionGuide(locale, key),
+                        )
+                        return (
+                          <div
+                            key={key}
+                            {...guideDomProps(guidePath)}
+                            className={`tapp-perm-card tapp-perm-card--${level} checkbox-group-card has-icon no-indicator has-guide-anchor`}
+                            role="group"
+                            aria-label={`${label} · ${levelLabels[level]}`}
+                          >
+                            <span className="checkbox-group-card-header">
+                              <span
+                                className="checkbox-group-card-icon"
+                                aria-hidden
+                              >
+                                <Icon />
+                              </span>
+                              <span className="checkbox-group-card-text">
+                                <span className="checkbox-group-card-label">
+                                  {label}
+                                  <SettingTitleGuideEntry
+                                    title={label}
+                                    guide={guide}
+                                  />
+                                </span>
+                                {description ? (
+                                  <span className="checkbox-group-card-desc">
+                                    {description}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </SettingGroup>
+                )
+              })}
+            </div>
+          )}
+        </SettingGroup>
+      </SettingSection>
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setToastMessage('')}
+        />
+      )}
+
+      <UninstallConfirmDialog
+        isOpen={showUninstallDialog}
+        appName={displayName || tappId}
+        anchorEl={uninstallAnchor}
+        onCancel={() => {
+          setShowUninstallDialog(false)
+          setUninstallAnchor(null)
+        }}
+        onConfirm={handleConfirmUninstall}
+      />
+    </>,
+  )
+}
+
+export default TappDetailPage

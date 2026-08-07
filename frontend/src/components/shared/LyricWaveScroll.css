@@ -1,0 +1,214 @@
+/*
+ * 共享歌词波浪视口（Tapp 语义）
+ * variant: card（资料库）| panel（控制面板）
+ */
+
+.lyric-wave {
+  --lyric-wave-color: #ef4444;
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  /* 默认几乎不 mask，避免焦点行被淡出裁掉 */
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.lyric-wave--card {
+  height: 5.8rem;
+  z-index: 1;
+  /* 卡片仅极薄上下淡出 */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 5%,
+    #000 95%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 5%,
+    #000 95%,
+    transparent 100%
+  );
+}
+
+.lyric-wave--panel {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* 面板极矮：关闭 mask，完全靠 JS 安全区 */
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.lyric-wave__inner {
+  position: absolute;
+  /* 上下+左右留白：防裁切，适度贴边 */
+  top: 0.15rem;
+  bottom: 0.15rem;
+  left: 0.3rem;
+  right: 0.3rem;
+  width: auto;
+}
+
+.lyric-wave--panel .lyric-wave__inner {
+  top: 0.12rem;
+  bottom: 0.12rem;
+  left: 0.25rem;
+  right: 0.25rem;
+}
+
+/*
+ * 行：统一字号/字重；激活只靠 scale + 色/模糊（零重排）
+ */
+.lyric-wave__row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  text-align: center;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  /* 顶对齐缩放：只向下长，不向上鼓出被裁 */
+  transform-origin: center top;
+  transition:
+    opacity 0.48s cubic-bezier(0.33, 1, 0.68, 1),
+    color 0.4s ease,
+    filter 0.48s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* —— card：资料库卡片白字；行距略松一点（仅 card，不影响面板） —— */
+.lyric-wave--card .lyric-wave__row {
+  padding: 0.2rem 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: 0.01em;
+  color: rgb(255 255 255 / 42%);
+  opacity: 0.42;
+  filter: blur(1.5px);
+}
+
+.lyric-wave--card .lyric-wave__row.is-active {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 98%);
+  opacity: 1;
+  filter: blur(0);
+  transition-delay: 0ms;
+}
+
+.lyric-wave--card .lyric-wave__row.is-near-1 {
+  opacity: 0.72;
+  filter: blur(0.6px);
+  transition-delay: 28ms;
+}
+
+.lyric-wave--card .lyric-wave__row.is-near-2 {
+  opacity: 0.48;
+  filter: blur(1.2px);
+  transition-delay: 48ms;
+}
+
+.lyric-wave--card .lyric-wave__row.is-far {
+  opacity: 0.28;
+  filter: blur(2px);
+  transition-delay: 70ms;
+}
+
+.lyric-wave--card .lyric-wave__row.is-passed {
+  color: color-mix(
+    in srgb,
+    var(--lyric-wave-color) 70%,
+    rgb(255 255 255 / 55%)
+  );
+}
+
+/* —— panel：控制面板主题色，与外容器内容区同宽居中 —— */
+.lyric-wave--panel .lyric-wave__row {
+  padding: 0.38rem 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  opacity: 0.4;
+  filter: blur(1.2px);
+  text-align: center;
+}
+
+html.dark .lyric-wave--panel .lyric-wave__row {
+  color: rgb(255 255 255 / 40%);
+}
+
+.lyric-wave--panel .lyric-wave__row.is-active {
+  /* 用字号而不是 scale>1，避免视觉溢出被 overflow 裁切 */
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-primary);
+  opacity: 1;
+  filter: blur(0);
+  transition-delay: 0ms;
+}
+
+html.dark .lyric-wave--panel .lyric-wave__row.is-active {
+  color: rgb(255 255 255 / 95%);
+}
+
+.lyric-wave--panel .lyric-wave__row.is-near-1 {
+  opacity: 0.7;
+  filter: blur(0.5px);
+  transition-delay: 28ms;
+}
+
+.lyric-wave--panel .lyric-wave__row.is-near-2 {
+  opacity: 0.48;
+  filter: blur(1px);
+  transition-delay: 48ms;
+}
+
+.lyric-wave--panel .lyric-wave__row.is-far {
+  opacity: 0.28;
+  filter: blur(1.6px);
+  transition-delay: 70ms;
+}
+
+.lyric-wave--panel .lyric-wave__row.is-passed {
+  opacity: 0.3;
+  color: color-mix(
+    in srgb,
+    var(--music-base-primary, var(--lyric-wave-color)) 55%,
+    var(--text-tertiary)
+  );
+}
+
+html.dark .lyric-wave--panel .lyric-wave__row.is-passed {
+  color: color-mix(
+    in srgb,
+    var(--music-base-primary, var(--lyric-wave-color)) 45%,
+    rgb(255 255 255 / 40%)
+  );
+}
+
+.lyric-wave__row.is-active,
+.lyric-wave__row.is-near-1,
+.lyric-wave__row.is-near-2 {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lyric-wave__row {
+    transition: opacity 0.15s ease, color 0.15s ease;
+    filter: none !important;
+    will-change: auto;
+  }
+}

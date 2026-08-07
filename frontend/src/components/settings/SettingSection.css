@@ -1,0 +1,237 @@
+/**
+ * 设置区块样式
+ * 继承并扩展 ConfigForm.css 的 config-section 样式
+ */
+
+/* 设置区块继承 config-section 基础样式 */
+.setting-section {
+  /* 样式继承自 ConfigForm.css 的 .config-section */
+}
+
+/* 右上角：本页 TOC | 特殊操作 | 分割线 | 常驻（重置 / 说明） */
+.section-header-actions-extra,
+.section-header-actions-pinned {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+/* —— 本页子分类快速跳转（标题栏右侧） —— */
+
+.section-toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+  max-width: min(28rem, 52vw);
+  margin: 0;
+  padding: 0;
+}
+
+.section-toc-chip {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--cfg-subtle-border);
+  border-radius: 999px;
+  background: var(--cfg-subtle-bg);
+  color: var(--cfg-text-2);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 550;
+  line-height: 1.25;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--sm-dur-fast) var(--sm-ease-standard),
+    background var(--sm-dur-fast) var(--sm-ease-standard),
+    border-color var(--sm-dur-fast) var(--sm-ease-standard);
+}
+
+.section-toc-chip:hover {
+  color: var(--cfg-text-1);
+  border-color: color-mix(
+    in srgb,
+    var(--cfg-accent, #3b82f6) 32%,
+    var(--cfg-subtle-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent, #3b82f6) 9%,
+    var(--cfg-subtle-bg)
+  );
+}
+
+.section-toc-chip:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 90%),
+    0 0 0 4px
+      color-mix(in srgb, var(--cfg-accent, #3b82f6) 45%, transparent);
+}
+
+html.dark .section-toc-chip {
+  border-color: var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+  color: var(--cfg-text-2);
+}
+
+html.dark .section-toc-chip:hover {
+  color: var(--cfg-text-1);
+  border-color: color-mix(
+    in srgb,
+    var(--cfg-accent, #60a5fa) 36%,
+    var(--cfg-subtle-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent, #60a5fa) 12%,
+    var(--cfg-subtle-bg)
+  );
+}
+
+html.dark .section-toc-chip:focus-visible {
+  box-shadow:
+    0 0 0 2px rgb(0 0 0 / 70%),
+    0 0 0 4px
+      color-mix(in srgb, var(--cfg-accent, #60a5fa) 50%, transparent);
+}
+
+/* TOC 与右侧操作之间的轻分隔 */
+.section-header-right > .section-toc + .section-header-actions-extra,
+.section-header-right > .section-toc + .section-header-actions-pinned {
+  margin-left: 0.15rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  color: var(--cfg-text-3);
+}
+
+html.dark
+  .section-header-right
+  > .section-toc
+  + .section-header-actions-extra,
+html.dark
+  .section-header-right
+  > .section-toc
+  + .section-header-actions-pinned {
+  border-left-color: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.section-header-actions-divider {
+  align-self: stretch;
+  width: 1px;
+  min-height: 1.75rem;
+  margin: 0.15rem 0.15rem;
+  flex-shrink: 0;
+  border-radius: 1px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: var(--cfg-text-3);
+}
+
+html.dark .section-header-actions-divider {
+  color: var(--cfg-text-3);
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+/* 右上角特殊操作卡（与重置 / 显示说明同密度） */
+.setting-section-header-action.checkbox-group-card {
+  max-width: min(16rem, 44vw);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.setting-section-header-action .checkbox-group-card-icon,
+.setting-section-header-action .checkbox-group-card-icon svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.setting-section-header-action .checkbox-group-card-desc {
+  -webkit-line-clamp: 2;
+}
+
+.setting-section-header-action .checkbox-group-card-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * 移动端：标题与动作不要横排硬挤。
+ * 动作换到第二行铺满，避免「第三方登录」等标题被按钮挤成竖排一字一列。
+ */
+@media (width < 1024px) {
+  .setting-section > .section-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 0.55rem;
+  }
+
+  .setting-section > .section-header .section-header-left {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+
+  .setting-section > .section-header .section-header-right {
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding-top: 0;
+  }
+
+  /*
+   * 移动端 TOC：独占第二行整宽横滑，避免与重置/说明挤成一团。
+   * 触控：nowrap + overflow-x + 边缘渐隐提示可滑。
+   */
+  .section-toc {
+    flex: 1 1 100%;
+    order: -1; /* 在 header-right 内排在操作芯片之前且整行 */
+    max-width: none;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.15rem;
+    /* 右缘淡出，暗示可横滑 */
+    mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(100% - 1.25rem),
+      transparent 100%
+    );
+  }
+
+  /* TOC 整行后，操作区不再要左边框分隔（上下分行） */
+  .section-header-right > .section-toc + .section-header-actions-extra,
+  .section-header-right > .section-toc + .section-header-actions-pinned {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .section-toc-chip {
+    /* 触控略加大热区 */
+    min-height: 1.85rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .setting-section-header-action.checkbox-group-card {
+    max-width: none;
+    flex: 1 1 auto;
+    min-width: min(100%, 8.5rem);
+  }
+
+  .setting-section-header-action .checkbox-group-card-desc {
+    display: none;
+  }
+}

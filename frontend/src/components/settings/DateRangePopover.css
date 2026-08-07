@@ -1,0 +1,666 @@
+/**
+ * 日期范围弹出层 — 设置页令牌 + 连贯选区 + 轻动效
+ */
+
+.date-range-popover {
+  --dr-cell: 2rem;
+  --dr-gap: 0.1rem;
+  --dr-radius: 0.875rem;
+  --dr-accent: var(--cfg-accent, #3b82f6);
+  --dr-accent-soft: color-mix(in srgb, var(--dr-accent) 14%, transparent);
+  --dr-accent-mid: color-mix(in srgb, var(--dr-accent) 22%, transparent);
+  --dr-enter-ms: 260ms;
+  --dr-exit-ms: 220ms;
+  --dr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dr-exit-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  position: fixed;
+  /* top/left 由 JS 写入（含 lerp），与指南浮窗一致 */
+  top: 0;
+  left: 0;
+  z-index: 10060;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(36rem, calc(100vw - 1.25rem));
+  padding: 0.8rem 0.9rem 0.75rem;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--dr-accent) 18%,
+      var(--cfg-frost-border, rgb(255 255 255 / 45%))
+    );
+  border-radius: var(--dr-radius);
+  background: color-mix(
+    in srgb,
+    var(--cfg-frost-bg, rgb(255 255 255 / 78%)) 90%,
+    transparent
+  );
+  backdrop-filter: var(--cfg-frost-filter, blur(18px) saturate(170%));
+  -webkit-backdrop-filter: var(--cfg-frost-filter, blur(18px) saturate(170%));
+  box-shadow:
+    0 4px 8px -2px rgb(0 0 0 / 8%),
+    0 16px 40px -12px color-mix(in srgb, var(--dr-accent) 16%, transparent);
+  color: var(--cfg-text-1);
+  font-family: inherit;
+  outline: none;
+  /* 先挂载后量尺寸：未 ready 时隐藏，对齐 SettingTitleHelp is-ready */
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 8px, 0) scale(0.97);
+  transform-origin: top right;
+  will-change: top, left, opacity, transform;
+  transition:
+    opacity var(--dr-enter-ms) var(--dr-ease),
+    transform var(--dr-enter-ms) var(--dr-ease),
+    box-shadow var(--dr-enter-ms) var(--dr-ease);
+}
+
+.date-range-popover--bottom {
+  transform-origin: top right;
+  transform: translate3d(0, -8px, 0) scale(0.97);
+}
+
+.date-range-popover--top {
+  transform-origin: bottom right;
+  transform: translate3d(0, 8px, 0) scale(0.97);
+}
+
+.date-range-popover.is-ready {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.date-range-popover.is-closing {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dr-exit-ms) var(--dr-exit-ease),
+    transform var(--dr-exit-ms) var(--dr-exit-ease);
+}
+
+.date-range-popover--bottom.is-closing {
+  transform: translate3d(0, -6px, 0) scale(0.98);
+}
+
+.date-range-popover--top.is-closing {
+  transform: translate3d(0, 6px, 0) scale(0.98);
+}
+
+html.dark .date-range-popover {
+  background: color-mix(
+    in srgb,
+    var(--cfg-frost-bg, rgb(28 28 30 / 78%)) 90%,
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--dr-accent) 22%,
+    var(--cfg-frost-border, rgb(255 255 255 / 12%))
+  );
+  box-shadow:
+    0 6px 12px -2px rgb(0 0 0 / 35%),
+    0 18px 44px -10px color-mix(in srgb, var(--dr-accent) 22%, transparent);
+}
+
+/* 指向锚点的小三角 */
+.date-range-popover-caret {
+  position: absolute;
+  width: 0.55rem;
+  height: 0.55rem;
+  background: inherit;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--dr-accent) 18%,
+      var(--cfg-frost-border, rgb(255 255 255 / 45%))
+    );
+  border-bottom: none;
+  border-right: none;
+  transform: rotate(45deg);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.95;
+}
+
+.date-range-popover--bottom .date-range-popover-caret {
+  top: -0.3rem;
+  right: 1.15rem;
+}
+
+.date-range-popover--top .date-range-popover-caret {
+  bottom: -0.3rem;
+  right: 1.15rem;
+  transform: rotate(225deg);
+}
+
+.date-range-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+
+.date-range-popover-title {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--cfg-text-1);
+}
+
+.date-range-nav {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.date-range-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cfg-subtle-border);
+  border-radius: 0.5rem;
+  background: var(--cfg-subtle-bg);
+  color: var(--cfg-text-2);
+  cursor: pointer;
+  transition:
+    background var(--sm-dur-fast, 0.12s) ease,
+    border-color var(--sm-dur-fast, 0.12s) ease,
+    color var(--sm-dur-fast, 0.12s) ease,
+    transform var(--sm-dur-fast, 0.12s) ease;
+}
+
+.date-range-nav-btn:hover:not(:disabled) {
+  background: var(--cfg-subtle-bg-hover, var(--cfg-subtle-bg));
+  border-color: var(--cfg-subtle-border-hover, var(--cfg-subtle-border));
+  color: var(--cfg-text-1);
+}
+
+.date-range-nav-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.date-range-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.date-range-nav-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dr-accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.date-range-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--cfg-text-3);
+}
+
+.date-range-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.7rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--cfg-subtle-bg);
+  border: 1px solid var(--cfg-subtle-border);
+}
+
+.date-range-summary-item {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 5.25rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.4rem;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 当前正在选的一端轻高亮 */
+.date-range-summary-item.is-active {
+  background: color-mix(in srgb, var(--dr-accent) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dr-accent) 28%, transparent);
+}
+
+.date-range-summary-item small {
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--cfg-text-3);
+  text-transform: uppercase;
+}
+
+.date-range-summary-item.is-active small {
+  color: var(--dr-accent);
+}
+
+.date-range-summary-item strong {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--cfg-text-1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.date-range-summary-item strong.is-empty {
+  color: var(--cfg-text-3);
+  font-weight: 550;
+}
+
+.date-range-summary-sep {
+  color: var(--cfg-text-3);
+  font-size: 0.8rem;
+  opacity: 0.55;
+  padding: 0 0.1rem;
+  align-self: flex-end;
+  margin-bottom: 0.2rem;
+}
+
+.date-range-summary-span {
+  margin-left: auto;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: var(--dr-accent-soft);
+  color: var(--dr-accent);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.date-range-months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.15rem;
+}
+
+.date-range-month {
+  flex: 1 1 auto;
+  width: calc(var(--dr-cell) * 7 + var(--dr-gap) * 6);
+  min-width: calc(var(--dr-cell) * 7 + var(--dr-gap) * 6);
+}
+
+.date-range-month-title {
+  margin-bottom: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--cfg-text-2);
+  text-align: center;
+}
+
+.date-range-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, var(--dr-cell));
+  gap: var(--dr-gap);
+  margin-bottom: 0.2rem;
+}
+
+.date-range-weekday {
+  width: var(--dr-cell);
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 650;
+  color: var(--cfg-text-3);
+  line-height: 1.5;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+.date-range-grid {
+  display: grid;
+  grid-template-columns: repeat(7, var(--dr-cell));
+  gap: var(--dr-gap);
+}
+
+.date-range-cell {
+  width: var(--dr-cell);
+  height: var(--dr-cell);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--cfg-text-1);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: default;
+}
+
+button.date-range-cell.is-day {
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease,
+    border-radius 0.12s ease;
+}
+
+button.date-range-cell.is-day:hover:not(:disabled):not(.is-start):not(
+    .is-end
+  ):not(.is-single) {
+  background: color-mix(in srgb, var(--dr-accent) 11%, transparent);
+}
+
+button.date-range-cell.is-day:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dr-accent) 55%, transparent);
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+.date-range-cell.is-disabled {
+  opacity: 0.26;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 区间填充：略收圆角让连成条带 */
+.date-range-cell.is-in-range,
+.date-range-cell.is-hover-in {
+  background: var(--dr-accent-soft);
+  border-radius: 0.15rem;
+  color: var(--cfg-text-1);
+}
+
+.date-range-cell.is-hover-in {
+  background: color-mix(in srgb, var(--dr-accent) 10%, transparent);
+}
+
+.date-range-cell.is-start,
+.date-range-cell.is-end,
+.date-range-cell.is-single {
+  background: var(--dr-accent);
+  color: #fff;
+  font-weight: 700;
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--dr-accent) 40%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 18%);
+  z-index: 1;
+}
+
+.date-range-cell.is-start {
+  border-radius: 0.5rem 0.18rem 0.18rem 0.5rem;
+}
+
+.date-range-cell.is-end {
+  border-radius: 0.18rem 0.5rem 0.5rem 0.18rem;
+}
+
+.date-range-cell.is-single {
+  border-radius: 0.5rem;
+}
+
+/* 今天：底部小点（未选中时可见） */
+.date-range-cell.is-today:not(.is-start):not(.is-end):not(.is-single)
+  .date-range-day-num::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0.18rem;
+  width: 0.22rem;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: var(--dr-accent);
+  transform: translateX(-50%);
+  opacity: 0.85;
+}
+
+.date-range-cell.is-today.is-start .date-range-day-num::after,
+.date-range-cell.is-today.is-end .date-range-day-num::after,
+.date-range-cell.is-today.is-single .date-range-day-num::after {
+  background: #fff;
+  opacity: 0.9;
+}
+
+.date-range-day-num {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.date-range-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--cfg-subtle-border);
+}
+
+.date-range-footer-left,
+.date-range-footer-right {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.date-range-btn {
+  margin: 0;
+  padding: 0.38rem 0.8rem;
+  border-radius: 0.55rem;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    opacity 0.12s ease,
+    transform 0.12s ease,
+    filter 0.12s ease;
+}
+
+.date-range-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.date-range-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.date-range-btn--ghost {
+  background: transparent;
+  border-color: var(--cfg-subtle-border);
+  color: var(--cfg-text-2);
+}
+
+.date-range-btn--ghost:hover:not(:disabled) {
+  background: var(--cfg-subtle-bg);
+  color: var(--cfg-text-1);
+}
+
+.date-range-btn--soft {
+  background: var(--dr-accent-soft);
+  border-color: color-mix(in srgb, var(--dr-accent) 18%, transparent);
+  color: var(--dr-accent);
+}
+
+.date-range-btn--soft:hover:not(:disabled) {
+  background: var(--dr-accent-mid);
+}
+
+.date-range-btn--primary {
+  background: var(--dr-accent);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--dr-accent) 30%, transparent);
+}
+
+.date-range-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.date-range-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dr-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* 标题行 compact 触发 chip */
+.date-range-trigger-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  max-width: min(15rem, 52vw);
+  margin: 0;
+  padding: 0.18rem 0.5rem 0.18rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+  color: var(--cfg-text-2);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.date-range-trigger-chip-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  opacity: 0.85;
+  line-height: 0;
+}
+
+.date-range-trigger-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-range-trigger-chip-chevron {
+  flex-shrink: 0;
+  width: 0.65rem;
+  height: 0.65rem;
+  opacity: 0.55;
+  transition: transform 0.15s ease, opacity 0.12s ease;
+}
+
+.date-range-trigger-chip:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--dr-accent) 36%, transparent);
+  background: color-mix(in srgb, var(--dr-accent) 8%, var(--cfg-subtle-bg));
+  color: var(--cfg-text-1);
+}
+
+.date-range-trigger-chip:hover:not(:disabled) .date-range-trigger-chip-chevron {
+  opacity: 0.8;
+}
+
+.date-range-trigger-chip[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--dr-accent) 42%, transparent);
+  background: color-mix(in srgb, var(--dr-accent) 12%, var(--cfg-subtle-bg));
+  color: var(--dr-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dr-accent) 12%, transparent);
+}
+
+.date-range-trigger-chip[aria-expanded='true'] .date-range-trigger-chip-chevron {
+  transform: rotate(180deg);
+  opacity: 0.9;
+}
+
+.date-range-trigger-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.date-range-trigger-chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dr-accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+@media (width <= 560px) {
+  .date-range-popover {
+    --dr-cell: 2.15rem;
+    max-width: calc(100vw - 0.75rem);
+    padding: 0.7rem 0.65rem 0.65rem;
+  }
+
+  .date-range-months {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .date-range-month {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .date-range-weekdays,
+  .date-range-grid {
+    width: 100%;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .date-range-weekday,
+  .date-range-cell {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .date-range-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-range-footer-left,
+  .date-range-footer-right {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .date-range-footer-left .date-range-btn,
+  .date-range-footer-right .date-range-btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-range-popover {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .date-range-popover.is-ready {
+    opacity: 1;
+  }
+
+  .date-range-popover.is-closing {
+    opacity: 0;
+  }
+
+  .date-range-trigger-chip-chevron,
+  button.date-range-cell.is-day,
+  .date-range-btn {
+    transition: none;
+  }
+}

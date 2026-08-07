@@ -1,0 +1,104 @@
+/* 白话分节 + 正文 1 2 3 步骤样式 */
+
+.setting-guide-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.setting-guide-block {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.setting-guide-block-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--cfg-text-3);
+}
+
+html.dark .setting-guide-block-label {
+  color: var(--cfg-text-3);
+}
+
+.setting-guide-block-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--cfg-text-1);
+  white-space: pre-line;
+}
+
+html.dark .setting-guide-block-text {
+  color: var(--cfg-text-1);
+}
+
+/* —— 正文步骤 1 / 2 / 3 —— */
+
+.setting-guide-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.setting-guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.setting-guide-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent, #6c8cff) 16%,
+    transparent
+  );
+  color: var(--cfg-accent, #4f6ef7);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+html.dark .setting-guide-step-num {
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent, #8ba3ff) 22%,
+    transparent
+  );
+  color: color-mix(
+    in srgb,
+    var(--color-light, var(--cfg-accent, #a5b8ff)) 70%,
+    white
+  );
+}
+
+.setting-guide-step-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--cfg-text-1);
+}
+
+html.dark .setting-guide-step-text {
+  color: var(--cfg-text-1);
+}

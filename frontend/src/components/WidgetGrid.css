@@ -1,0 +1,32 @@
+/* WidgetGrid 专用样式 */
+
+/* 16x4 网格布局 */
+.widget-grid-container {
+  aspect-ratio: 4 / 1;
+}
+
+/* 网格背景 */
+.widget-grid-background {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+}
+
+/* 拖拽时的流畅过渡 */
+.widget-drag-preview {
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+}
+
+/* 触摸优化 - 仅在编辑模式下禁用触摸滚动 */
+@media (hover: none) and (pointer: coarse) {
+  /* 编辑模式下禁用触摸滚动，允许拖拽 */
+  .widget-grid-container.edit-mode {
+    touch-action: none;
+  }
+
+  /* 非编辑模式下允许正常滚动 */
+  .widget-grid-container:not(.edit-mode) {
+    touch-action: pan-y;
+  }
+}

@@ -1,0 +1,129 @@
+/**
+ * 登录页 / 注册页 OAuth provider 按钮样式
+ * PR #5/#6
+ */
+
+.oauth-provider-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.625rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+  text-decoration: none;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.oauth-provider-btn:hover {
+  transform: translateY(-1px);
+}
+
+.oauth-provider-btn:active {
+  transform: translateY(0);
+}
+
+.oauth-provider-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.oauth-provider-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.oauth-provider-icon-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.25rem;
+  background: currentcolor;
+  opacity: 0.18;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.oauth-provider-icon-fallback::before {
+  content: attr(data-letter);
+}
+
+.oauth-provider-label {
+  flex: 1;
+  text-align: center;
+
+  /* keep the visual center despite the icon on the left */
+  padding-right: 1.25rem;
+}
+
+/* === GitHub variant === */
+.oauth-provider-btn-github {
+  background: #1f2328;
+  color: #fff;
+  border-color: #1f2328;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+}
+
+.oauth-provider-btn-github:hover {
+  background: #2d333b;
+  border-color: #2d333b;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
+}
+
+html.dark .oauth-provider-btn-github {
+  background: #f6f8fa;
+  color: #1f2328;
+  border-color: rgb(255 255 255 / 15%);
+}
+
+html.dark .oauth-provider-btn-github:hover {
+  background: #fff;
+  box-shadow: 0 4px 16px rgb(255 255 255 / 15%);
+}
+
+/* === Generic OIDC variant === */
+.oauth-provider-btn-oidc {
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #1f2937);
+  border-color: var(--border-color, rgb(0 0 0 / 12%));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.oauth-provider-btn-oidc:hover {
+  background: color-mix(
+    in srgb,
+    var(--color-primary, #6366f1) 6%,
+    var(--bg-card, #fff)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary, #6366f1) 40%,
+    var(--border-color, rgb(0 0 0 / 12%))
+  );
+  box-shadow: 0 4px 12px
+    color-mix(in srgb, var(--color-primary, #6366f1) 15%, transparent);
+}
+
+html.dark .oauth-provider-btn-oidc {
+  background: var(--bg-card, rgb(255 255 255 / 4%));
+  border-color: rgb(255 255 255 / 12%);
+}

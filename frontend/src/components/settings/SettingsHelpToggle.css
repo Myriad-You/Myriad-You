@@ -1,0 +1,32 @@
+/**
+ * 显示说明 — 与重置本页同款 CheckboxCard 布局微调
+ */
+
+.settings-help-toggle.checkbox-group-card {
+  max-width: min(16rem, 44vw);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.settings-help-toggle .checkbox-group-card-icon,
+.settings-help-toggle .checkbox-group-card-icon svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.settings-help-toggle .checkbox-group-card-desc {
+  -webkit-line-clamp: 2;
+}
+
+/* 与 SettingSection 移动头同断点（<1024）：描述收起，芯片可撑满一行 */
+@media (width < 1024px) {
+  .settings-help-toggle.checkbox-group-card {
+    max-width: none;
+    flex: 1 1 auto;
+    min-width: min(100%, 8.5rem);
+  }
+
+  .settings-help-toggle .checkbox-group-card-desc {
+    display: none;
+  }
+}

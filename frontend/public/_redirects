@@ -1,0 +1,12 @@
+# SPA 路由重定向规则
+# 适用于静态托管平台的客户端路由回退。
+# 开发环境的 /api/* 由 Astro dev proxy 转发；生产环境由 Myriad proxy 转发。
+
+# 静态资源直接访问
+/assets/*  /assets/:splat  200
+/logo.webp  /logo.webp  200
+/favicon.webp  /favicon.webp  200
+/sw.js  /sw.js  200
+
+# 所有其他路由都回退到 index.html
+/*    /index.html   200

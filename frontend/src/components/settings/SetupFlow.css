@@ -1,0 +1,325 @@
+/**
+ * SetupFlow — 流程图步骤轨
+ */
+
+.setup-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* 与 SettingGroup 标题同级 */
+.setup-flow-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cfg-text-1);
+  line-height: 1.3;
+}
+
+html.dark .setup-flow-title {
+  color: var(--cfg-text-1);
+}
+
+.setup-flow-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+}
+
+/* —— 横排（默认 / auto 宽屏） —— */
+.setup-flow.is-horizontal .setup-flow-track,
+.setup-flow.is-auto .setup-flow-track {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+}
+
+.setup-flow.is-horizontal .setup-flow-step,
+.setup-flow.is-auto .setup-flow-step {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-width: 8.5rem;
+  max-width: 16rem;
+}
+
+.setup-flow.is-horizontal .setup-flow-connector,
+.setup-flow.is-auto .setup-flow-connector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 1.35rem;
+  margin: 0 0.1rem;
+  align-self: center;
+}
+
+.setup-flow.is-horizontal .setup-flow-connector-line,
+.setup-flow.is-auto .setup-flow-connector-line {
+  flex: 1 1 auto;
+  height: 1px;
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent) 28%,
+    var(--cfg-subtle-border)
+  );
+}
+
+.setup-flow.is-horizontal .setup-flow-connector-arrow,
+.setup-flow.is-auto .setup-flow-connector-arrow {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid
+    color-mix(in srgb, var(--cfg-accent) 45%, var(--cfg-text-3));
+}
+
+/* —— 竖排 —— */
+.setup-flow.is-vertical .setup-flow-track {
+  flex-direction: column;
+}
+
+.setup-flow.is-vertical .setup-flow-step {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  min-width: 0;
+}
+
+.setup-flow.is-vertical .setup-flow-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1.75rem;
+  height: 0.9rem;
+  margin: 0.05rem 0 0.05rem 0.55rem;
+}
+
+.setup-flow.is-vertical .setup-flow-connector-line {
+  flex: 1 1 auto;
+  width: 1px;
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent) 28%,
+    var(--cfg-subtle-border)
+  );
+}
+
+.setup-flow.is-vertical .setup-flow-connector-arrow {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid
+    color-mix(in srgb, var(--cfg-accent) 45%, var(--cfg-text-3));
+}
+
+/* is-auto：与设置页移动分层同断点（<1024）竖排，避免配置窄栏内横滑小卡 */
+@media (width < 1024px) {
+  .setup-flow.is-auto .setup-flow-track {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .setup-flow.is-auto .setup-flow-step {
+    flex-direction: column;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .setup-flow.is-auto .setup-flow-connector {
+    flex-direction: column;
+    align-items: center;
+    width: 1.75rem;
+    height: 0.9rem;
+    margin: 0.05rem 0 0.05rem 0.55rem;
+  }
+
+  .setup-flow.is-auto .setup-flow-connector-line {
+    flex: 1 1 auto;
+    width: 1px;
+    height: auto;
+    background: color-mix(
+      in srgb,
+      var(--cfg-accent) 28%,
+      var(--cfg-subtle-border)
+    );
+  }
+
+  .setup-flow.is-auto .setup-flow-connector-arrow {
+    width: 0;
+    height: 0;
+    border-top: 5px solid
+      color-mix(in srgb, var(--cfg-accent) 45%, var(--cfg-text-3));
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: none;
+  }
+}
+
+/* —— 步骤卡片 —— */
+.setup-flow-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+  transition:
+    border-color var(--sm-dur-fast) var(--sm-ease-standard),
+    background var(--sm-dur-fast) var(--sm-ease-standard);
+}
+
+html.dark .setup-flow-step-card {
+  border-color: var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+}
+
+.setup-flow-step.is-done .setup-flow-step-card {
+  border-color: color-mix(in srgb, var(--cfg-accent) 35%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent) 8%,
+    var(--cfg-subtle-bg)
+  );
+}
+
+html.dark .setup-flow-step.is-done .setup-flow-step-card {
+  border-color: color-mix(in srgb, var(--cfg-accent) 38%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--cfg-accent) 12%,
+    var(--cfg-subtle-bg)
+  );
+}
+
+.setup-flow-step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.setup-flow-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cfg-accent);
+  background: color-mix(in srgb, var(--cfg-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cfg-accent) 28%, transparent);
+}
+
+.setup-flow-step-index svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.setup-flow-step.is-done .setup-flow-step-index {
+  color: #fff;
+  background: var(--cfg-accent);
+  border-color: transparent;
+}
+
+.setup-flow-step-head-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+  min-width: 0;
+  padding-top: 0.1rem;
+}
+
+.setup-flow-step-title {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--cfg-text-2);
+  line-height: 1.25;
+}
+
+html.dark .setup-flow-step-title {
+  color: var(--cfg-text-1);
+}
+
+.setup-flow-step-optional {
+  font-size: 0.6rem;
+  font-weight: 650;
+  padding: 0.08rem 0.3rem;
+  border-radius: 999px;
+  color: #92400e;
+  background: rgb(251 191 36 / 18%);
+  line-height: 1.2;
+}
+
+html.dark .setup-flow-step-optional {
+  color: #fcd34d;
+  background: rgb(251 191 36 / 14%);
+}
+
+.setup-flow-step-desc {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--cfg-text-3);
+  line-height: 1.4;
+}
+
+html.dark .setup-flow-step-desc {
+  color: var(--cfg-text-3);
+}
+
+.setup-flow-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+  min-width: 0;
+}
+
+.setup-flow-step-actions .settings-btn {
+  max-width: 100%;
+}
+
+.setup-flow-step-title,
+.setup-flow-step-desc {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (width < 1024px) {
+  .setup-flow-step-card {
+    width: 100%;
+  }
+
+  .setup-flow-step-actions {
+    width: 100%;
+  }
+
+  .setup-flow-step-actions .settings-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

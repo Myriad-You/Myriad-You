@@ -1,0 +1,248 @@
+/**
+ * 自定义下拉：触发器 + 选项列表，完整深浅色适配。
+ */
+
+.field-select-wrap {
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.field-select-wrap.is-open {
+  z-index: 40;
+}
+
+.field-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+
+  /* 复用 ConfigForm .field-select 的外观变量；这里补布局 */
+}
+
+.field-select-value {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-select-chevron {
+  flex-shrink: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  /* 中性灰箭头，避免蓝灰 slate */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23686870' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.85;
+  transition:
+    transform var(--sm-dur-fast) var(--sm-ease-standard),
+    opacity var(--sm-dur-fast) var(--sm-ease-standard);
+}
+
+.field-select-wrap.is-open .field-select-chevron {
+  transform: rotate(180deg);
+}
+
+html.dark .field-select-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ebebf5' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  opacity: 0.55;
+}
+
+html.dark .field-select-wrap.is-open .field-select-chevron,
+html.dark .field-select-trigger:hover .field-select-chevron {
+  opacity: 0.85;
+}
+
+/* 浮层壳：搜索框 + 列表；定位/阴影挂在 panel 上 */
+.field-select-panel {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  bottom: auto;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  max-height: min(18rem, 55vh);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--cfg-frost-border);
+  border-radius: 0.75rem;
+  background: var(--cfg-frost-elevated-bg);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 10%),
+    0 2px 8px rgb(0 0 0 / 5%);
+  backdrop-filter: var(--cfg-frost-filter);
+  animation: sm-pop-in var(--sm-dur-base) var(--sm-ease-enter) backwards;
+}
+
+.field-select-wrap.is-up .field-select-panel {
+  top: auto;
+  bottom: calc(100% + 0.3rem);
+}
+
+html.dark .field-select-panel {
+  border-color: var(--cfg-frost-border);
+  background: var(--cfg-frost-elevated-bg);
+  box-shadow:
+    0 14px 36px rgb(0 0 0 / 45%),
+    0 2px 8px rgb(0 0 0 / 30%);
+}
+
+.field-select-search {
+  flex-shrink: 0;
+  padding: 0.35rem 0.35rem 0.25rem;
+  border-bottom: 1px solid var(--cfg-subtle-border);
+}
+
+.field-select-search-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--cfg-subtle-border);
+  border-radius: 0.45rem;
+  background: var(--cfg-input-bg, var(--cfg-subtle-bg));
+  color: var(--cfg-text-1);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  outline: none;
+}
+
+.field-select-search-input::placeholder {
+  color: var(--cfg-text-3);
+}
+
+.field-select-search-input:focus {
+  border-color: color-mix(in srgb, var(--cfg-accent, #3b82f6) 45%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--cfg-accent, #3b82f6) 18%, transparent);
+}
+
+.field-select-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+  list-style: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: none;
+}
+
+.field-select-empty {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--cfg-text-3);
+  text-align: center;
+  user-select: none;
+}
+
+.field-select-option {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--cfg-text-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.35;
+  cursor: pointer;
+  transition:
+    background-color var(--sm-dur-fast) var(--sm-ease-standard),
+    color var(--sm-dur-fast) var(--sm-ease-standard);
+}
+
+.field-select-option:hover:not(:disabled),
+.field-select-option:focus-visible:not(:disabled) {
+  outline: none;
+  background: color-mix(in srgb, var(--cfg-accent, #6366f1) 10%, transparent);
+  color: var(--cfg-text-1);
+}
+
+.field-select-option.is-selected {
+  background: color-mix(in srgb, var(--cfg-accent, #6366f1) 14%, transparent);
+  color: color-mix(in srgb, var(--cfg-accent) 80%, var(--cfg-text-1));
+  font-weight: 600;
+}
+
+.field-select-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+html.dark .field-select-option {
+  color: var(--cfg-text-1);
+}
+
+html.dark .field-select-option:hover:not(:disabled),
+html.dark .field-select-option:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--cfg-accent, #818cf8) 16%, transparent);
+  color: var(--cfg-text-1);
+}
+
+html.dark .field-select-option.is-selected {
+  background: color-mix(in srgb, var(--cfg-accent, #818cf8) 22%, transparent);
+  color: color-mix(in srgb, var(--cfg-accent, #93c5fd) 70%, var(--cfg-text-1));
+}
+
+/* 行内紧凑（联邦实例列表等） */
+.field-select-size-sm {
+  width: fit-content;
+  max-width: 12rem;
+}
+
+.field-select-size-sm .field-select-trigger {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.4rem 0.55rem 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.field-select-size-sm .field-select-panel {
+  min-width: max(100%, 9rem);
+  width: max-content;
+  max-width: min(16rem, 80vw);
+  right: 0;
+  left: auto;
+}
+
+.field-select-size-sm .field-select-option {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.field-select-size-sm .field-select-search-input {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-select-chevron,
+  .field-select-option {
+    transition: none;
+  }
+
+  .field-select-menu {
+    animation: none;
+  }
+}

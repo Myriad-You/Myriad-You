@@ -1,0 +1,25 @@
+---
+interface Props {
+  description: string
+}
+
+const { description } = Astro.props
+---
+
+<noscript>
+  <style>
+    #page-loader {
+      display: none !important;
+    }
+    #app-root {
+      opacity: 1 !important;
+    }
+  </style>
+  <main
+    style="max-width: 42rem; margin: 4rem auto; padding: 0 1.5rem; font-family: system-ui, sans-serif; line-height: 1.7;"
+  >
+    <h1>Myriad</h1>
+    <p>{description}</p>
+    <p>请启用 JavaScript 以加载完整的交互式个人主页。</p>
+  </main>
+</noscript>

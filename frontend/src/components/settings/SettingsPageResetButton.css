@@ -1,0 +1,152 @@
+/**
+ * 重置本页 — 默认灰 / hover 红 / 原地确认武装态
+ */
+
+.settings-page-reset-wrap {
+  flex-shrink: 0;
+  max-width: min(16rem, 44vw);
+  min-width: 0;
+}
+
+.settings-page-reset.checkbox-group-card {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.settings-page-reset .checkbox-group-card-icon,
+.settings-page-reset .checkbox-group-card-icon svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.settings-page-reset .checkbox-group-card-desc {
+  -webkit-line-clamp: 2;
+}
+
+/* —— 默认：与普通卡片同灰（压过 tone-danger 静息色） —— */
+.settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger
+  .checkbox-group-card-icon,
+.settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger
+  .checkbox-group-card-label {
+  color: var(--cfg-text-3);
+}
+
+.settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger
+  .checkbox-group-card-desc {
+  color: var(--cfg-text-3);
+}
+
+html.dark
+  .settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger
+  .checkbox-group-card-icon,
+html.dark
+  .settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger
+  .checkbox-group-card-label {
+  color: var(--cfg-text-3);
+}
+
+html.dark
+  .settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger
+  .checkbox-group-card-desc {
+  color: var(--cfg-text-3);
+}
+
+/* —— hover：红色（未武装） —— */
+.settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger:hover:not(
+    :disabled
+  ):not(.is-disabled):not(.is-confirming):not(.is-loading)
+  .checkbox-group-card-icon,
+.settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger:hover:not(
+    :disabled
+  ):not(.is-disabled):not(.is-confirming):not(.is-loading)
+  .checkbox-group-card-label {
+  color: #dc2626;
+}
+
+.settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger:hover:not(
+    :disabled
+  ):not(.is-disabled):not(.is-confirming):not(.is-loading) {
+  border-color: rgb(239 68 68 / 32%);
+  background: rgb(239 68 68 / 6%);
+  box-shadow: 0 1px 2px rgb(239 68 68 / 6%);
+}
+
+html.dark
+  .settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger:hover:not(
+    :disabled
+  ):not(.is-disabled):not(.is-confirming):not(.is-loading)
+  .checkbox-group-card-icon,
+html.dark
+  .settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger:hover:not(
+    :disabled
+  ):not(.is-disabled):not(.is-confirming):not(.is-loading)
+  .checkbox-group-card-label {
+  color: #f87171;
+}
+
+html.dark
+  .settings-page-reset.checkbox-group-card--action.checkbox-group-card--tone-danger:hover:not(
+    :disabled
+  ):not(.is-disabled):not(.is-confirming):not(.is-loading) {
+  border-color: rgb(248 113 113 / 32%);
+  background: rgb(239 68 68 / 10%);
+}
+
+/* —— 武装确认：持续红态 —— */
+.settings-page-reset.is-confirming.checkbox-group-card--action,
+.settings-page-reset.is-confirming.checkbox-group-card--action:hover:not(
+    :disabled
+  ) {
+  border-color: rgb(239 68 68 / 42%);
+  background: rgb(239 68 68 / 10%);
+  box-shadow: 0 1px 2px rgb(239 68 68 / 8%);
+}
+
+.settings-page-reset.is-confirming.checkbox-group-card--action
+  .checkbox-group-card-icon,
+.settings-page-reset.is-confirming.checkbox-group-card--action
+  .checkbox-group-card-label {
+  color: #dc2626;
+}
+
+.settings-page-reset.is-confirming.checkbox-group-card--action
+  .checkbox-group-card-desc {
+  color: var(--cfg-text-3);
+}
+
+html.dark .settings-page-reset.is-confirming.checkbox-group-card--action,
+html.dark
+  .settings-page-reset.is-confirming.checkbox-group-card--action:hover:not(
+    :disabled
+  ) {
+  border-color: rgb(248 113 113 / 40%);
+  background: rgb(239 68 68 / 14%);
+}
+
+html.dark
+  .settings-page-reset.is-confirming.checkbox-group-card--action
+  .checkbox-group-card-icon,
+html.dark
+  .settings-page-reset.is-confirming.checkbox-group-card--action
+  .checkbox-group-card-label {
+  color: #f87171;
+}
+
+html.dark
+  .settings-page-reset.is-confirming.checkbox-group-card--action
+  .checkbox-group-card-desc {
+  color: var(--cfg-text-3);
+}
+
+/* 与 SettingSection 移动头同断点（<1024） */
+@media (width < 1024px) {
+  .settings-page-reset-wrap {
+    max-width: none;
+    flex: 1 1 auto;
+    min-width: min(100%, 8.5rem);
+  }
+
+  .settings-page-reset .checkbox-group-card-desc {
+    display: none;
+  }
+}

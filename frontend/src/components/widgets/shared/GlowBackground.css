@@ -1,0 +1,147 @@
+/**
+ * GlowBackground 纯 CSS 动画样式
+ *
+ * 性能优势：
+ * - 浏览器原生 CSS 动画优化
+ * - 无 JS 运行时开销
+ * - 自动启用 GPU 合成
+ */
+
+/* ========== 基础样式 ========== */
+
+.glow-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0); /* 强制 GPU 合成层 */
+  backface-visibility: hidden;
+  background: var(--glow-color); /* 组件经内联变量下发身份色 */
+}
+
+/* ========== 主题光晕模式（html[data-glow] 驱动，见 useWidgetTheme） ========== */
+
+/* 统一主题色：覆盖各组件身份色 */
+:root[data-glow='primary'] .glow-orb {
+  background: var(--color-primary);
+}
+
+/* 关闭光晕 */
+:root[data-glow='none'] .glow-orb {
+  display: none;
+}
+
+/* ========== 位置变体 ========== */
+
+.glow-right {
+  right: -2rem;
+  top: -2rem;
+}
+
+.glow-left {
+  left: -1.5rem;
+  bottom: -1.5rem;
+}
+
+/* ========== 尺寸变体 ========== */
+
+.glow-size-sm {
+  width: 6rem;
+  height: 6rem;
+}
+
+.glow-size-sm.glow-secondary {
+  width: 5rem;
+  height: 5rem;
+}
+
+.glow-size-md {
+  width: 8rem;
+  height: 8rem;
+}
+
+.glow-size-md.glow-secondary {
+  width: 6rem;
+  height: 6rem;
+}
+
+.glow-size-lg {
+  width: 12rem;
+  height: 12rem;
+}
+
+.glow-size-lg.glow-secondary {
+  width: 10rem;
+  height: 10rem;
+}
+
+/* ========== 模糊效果 ========== */
+
+.glow-blur-sm {
+  filter: blur(24px); /* blur-xl */
+}
+
+.glow-blur-lg {
+  filter: blur(64px); /* blur-3xl */
+}
+
+/* ========== 静态状态 ========== */
+
+.glow-static {
+  opacity: var(--glow-opacity, 0.1);
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.glow-static.glow-secondary {
+  opacity: var(--glow-opacity, 0.06);
+}
+
+/* ========== 动画状态 ========== */
+
+.glow-animate-primary {
+  animation: glow-pulse-primary 3s ease-in-out forwards; /* 单次播放，保持最终状态 */
+  will-change: opacity, transform;
+}
+
+.glow-animate-secondary {
+  animation: glow-pulse-secondary 3s ease-in-out forwards; /* 单次播放，保持最终状态 */
+  animation-delay: 0.5s;
+  will-change: opacity, transform;
+}
+
+/* ========== 关键帧动画（单次淡入） ========== */
+
+@keyframes glow-pulse-primary {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
+
+  100% {
+    opacity: var(--glow-opacity, 0.12);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes glow-pulse-secondary {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
+
+  100% {
+    opacity: var(--glow-opacity, 0.08);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* ========== 性能模式降级 ========== */
+
+/* 减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .glow-animate-primary,
+  .glow-animate-secondary {
+    animation: none;
+    opacity: var(--glow-opacity, 0.1);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}

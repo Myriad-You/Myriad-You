@@ -1,0 +1,224 @@
+/**
+ * SettingGroupGrid
+ *
+ * stretch（默认）: 2 列 grid + align-items:stretch → 同排卡片外框同高
+ * rows: 按行切开 + subgrid → 同高 + 内部区块对齐
+ * start: 高度随内容
+ */
+
+.setting-group-grid {
+  --sg-grid-gap: var(--settings-gap-group, 1.25rem);
+  --sg-grid-min: 17.5rem;
+  --sg-grid-columns: 2;
+  --sg-row-gap: var(--settings-gap-item, 0.625rem);
+
+  width: 100%;
+  min-width: 0;
+}
+
+/* —— 列模板 —— */
+
+.setting-group-grid--cols-1 {
+  --sg-cols-template: minmax(0, 1fr);
+}
+
+.setting-group-grid--cols-2 {
+  --sg-cols-template: repeat(
+    auto-fit,
+    minmax(
+      min(100%, max(var(--sg-grid-min), calc((100% - var(--sg-grid-gap)) / 2))),
+      1fr
+    )
+  );
+}
+
+.setting-group-grid--cols-3 {
+  --sg-cols-template: repeat(
+    auto-fit,
+    minmax(
+      min(
+        100%,
+        max(
+          var(--sg-grid-min),
+          calc(
+            (100% - (var(--sg-grid-columns) - 1) * var(--sg-grid-gap)) /
+              var(--sg-grid-columns)
+          )
+        )
+      ),
+      1fr
+    )
+  );
+}
+
+@media (width <= 640px) {
+  .setting-group-grid--cols-2,
+  .setting-group-grid--cols-3 {
+    --sg-cols-template: minmax(0, 1fr);
+  }
+}
+
+/* —— stretch / start：扁平多列 —— */
+
+.setting-group-grid--align-stretch,
+.setting-group-grid--align-start {
+  display: grid;
+  grid-template-columns: var(--sg-cols-template);
+  gap: var(--sg-grid-gap);
+}
+
+/* 关键：同排卡片被拉成与最高卡相同高度 */
+.setting-group-grid--align-stretch {
+  align-items: stretch;
+}
+
+.setting-group-grid--align-start {
+  align-items: start;
+}
+
+/**
+ * 网格内卡片：纵向 flex，height 100% 吃满格子 → 左右外框同高、底边齐
+ */
+.setting-group-grid--align-stretch > .setting-group.setting-group--in-grid {
+  min-width: 0;
+  margin: 0;
+  height: 100%;
+  min-height: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.setting-group-grid--align-stretch
+  > .setting-group.setting-group--in-grid
+  > .setting-group-header {
+  flex: 0 0 auto;
+}
+
+.setting-group-grid--align-stretch
+  > .setting-group.setting-group--in-grid
+  > .setting-group-content,
+.setting-group-grid--align-stretch
+  > .setting-group.setting-group--in-grid
+  > .sm-collapse
+  > .sm-collapse-inner
+  > .setting-group-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-row-gap);
+}
+
+/* 网格内折叠：接住 stretch 链，但 open 时仍按内容高度，勿 1fr 撑满格子 */
+.setting-group-grid--align-stretch
+  > .setting-group.setting-group--in-grid
+  > .sm-collapse {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 100%;
+  min-height: 0;
+}
+
+.setting-group-grid--align-stretch
+  > .setting-group.setting-group--in-grid
+  > .sm-collapse[data-state='entering'],
+.setting-group-grid--align-stretch
+  > .setting-group.setting-group--in-grid
+  > .sm-collapse[data-state='open'] {
+  /* 覆盖全局 align-self:start，横线仍拉满卡宽 */
+  align-self: stretch;
+}
+
+.setting-group-grid--align-start > .setting-group.setting-group--in-grid {
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* —— rows：按行 + subgrid —— */
+
+.setting-group-grid--align-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-grid-gap);
+}
+
+.setting-group-grid-row {
+  display: grid;
+  grid-template-columns: repeat(var(--sg-row-cols, 2), minmax(0, 1fr));
+  column-gap: var(--sg-grid-gap);
+  row-gap: var(--sg-row-gap);
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (width <= 640px) {
+  .setting-group-grid-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.setting-group-grid-row > .setting-group.setting-group--subgrid {
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  grid-template-rows: subgrid;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.setting-group-grid-row > .setting-group--subgrid > .setting-group-header {
+  margin-bottom: 0;
+  min-width: 0;
+  align-self: start;
+}
+
+.setting-group-grid-row > .setting-group--subgrid > .setting-item,
+.setting-group-grid-row > .setting-group--subgrid > .settings-stack {
+  margin: 0;
+  min-width: 0;
+  align-self: start;
+}
+
+.setting-group-grid-row
+  > .setting-group--subgrid.is-switch-off
+  > :not(.setting-group-header) {
+  opacity: 0.52;
+}
+
+/* 网格分组卡：内层 → 微透（无蓝调渐变） */
+.setting-group-grid.is-card .setting-group {
+  padding: 0.85rem 0.95rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 4%),
+    inset 0 1px 0 rgb(255 255 255 / 70%);
+  box-sizing: border-box;
+}
+
+html.dark .setting-group-grid.is-card .setting-group {
+  border-color: var(--cfg-subtle-border);
+  background: var(--cfg-subtle-bg);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 25%),
+    inset 0 1px 0 rgb(255 255 255 / 4%);
+}
+
+.setting-group-grid.is-card .setting-group.is-switch-off {
+  opacity: 1;
+}
+
+.setting-group-grid .choice-segmented {
+  max-width: 100%;
+}
+
+.config-form > .setting-group-grid,
+.setting-group-content > .setting-group-grid {
+  margin: 0;
+}

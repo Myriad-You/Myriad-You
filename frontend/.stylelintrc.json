@@ -1,0 +1,27 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "ignoreFiles": ["**/dist/**", "**/node_modules/**", "**/.astro/**"],
+  "rules": {
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwind",
+          "apply",
+          "layer",
+          "variants",
+          "responsive",
+          "screen",
+          "config",
+          "plugin"
+        ]
+      }
+    ],
+    "declaration-block-no-duplicate-custom-properties": null,
+    "import-notation": "string",
+    "keyframes-name-pattern": null,
+    "no-descending-specificity": null,
+    "no-duplicate-selectors": null,
+    "selector-class-pattern": null
+  }
+}

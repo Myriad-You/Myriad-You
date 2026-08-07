@@ -1,0 +1,94 @@
+/* ========================================
+   全局页面切换动画样式
+   统一的进入和退出动画
+   ======================================== */
+
+/* ========================================
+   防止滚动条导致的布局偏移 - 自定义滚动条方案
+   ======================================== */
+
+/*
+ * 完全隐藏浏览器原生滚动条，使用自定义UI滚动条
+ * 这样可以从根本上避免布局偏移问题
+ */
+
+/* 隐藏所有原生滚动条 - 全局应用 */
+html,
+body,
+* {
+  scrollbar-width: none !important; /* Firefox（自 astro 页面级样式迁移） */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome/Safari/Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html {
+  overflow: hidden auto;
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* CSS 变量 */
+:root {
+  --scrollbar-width: 6px;
+  --scrollbar-track-color: rgb(0 0 0 / 10%);
+  --scrollbar-thumb-color: rgb(0 0 0 / 30%);
+  --scrollbar-thumb-hover-color: rgb(0 0 0 / 50%);
+}
+
+html.dark {
+  --scrollbar-track-color: rgb(255 255 255 / 10%);
+  --scrollbar-thumb-color: rgb(255 255 255 / 30%);
+  --scrollbar-thumb-hover-color: rgb(255 255 255 / 50%);
+}
+
+/* ========================================
+   页面切换过渡优化 - 防止闪屏
+   ======================================== */
+
+/*
+ * 主内容区域使用相对定位，为退出动画提供容器。
+ * 不要 isolation:isolate —— 那会建 backdrop root，
+ * 主内容里的毛玻璃（数字生命设定卡 / 引导卡）就糊不到 #wallpaper。
+ * AnimatePresence 已是 mode="wait"，不需要靠 isolation 叠两页。
+ */
+main.relative {
+  position: relative;
+}
+
+/*
+ * AnimatedView 容器样式
+ * 页面级动画由 App.tsx 的 PageWrapper 处理
+ */
+.animated-view-container {
+  /* 容器继承父级尺寸 */
+  width: 100%;
+}
+
+/* 移动端滚动修复 */
+@media (width <= 767px) {
+  /* 确保主内容区域在移动端不阻止滚动 */
+  main.relative {
+    overflow: visible;
+  }
+}
+
+/* ========================================
+   减少动画偏好支持
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  /* 简化 framer-motion 动画 */
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
