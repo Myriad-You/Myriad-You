@@ -132,16 +132,7 @@ export {
   PAGE_FEATURES,
 } from './pageFeatures'
 
-// Brew
-export {
-  brewAnimationPresets,
-  cleanupBrew,
-  getBrewTransition,
-  useBrewAnimationConfig,
-  useBrewCardStagger,
-  useBrewScheduler,
-} from './pages/brew'
-
+// Home 页面调度器
 export {
   cleanupHome,
   useHomeIdle,
@@ -152,51 +143,6 @@ export {
   useHomeVisibility,
   useHomeVisibilityInterval,
 } from './pages/home'
-
-// Library
-export {
-  cleanupLibrary,
-  useLibraryInfiniteScroll,
-  useLibraryIntersectionObserver,
-  useLibraryInView,
-  useLibraryLazyLoad,
-  useLibraryPrefetch,
-  useLibraryResize,
-  useLibraryScheduler,
-} from './pages/library'
-
-// Reports
-export {
-  cleanupReports,
-  useReportsBatchDom,
-  useReportsInterval,
-  useReportsRaf,
-  useReportsRafThrottle,
-  useReportsScheduler,
-  useReportsTimeout,
-  useReportsVisibility,
-  useReportsVisibilityInterval,
-} from './pages/reports'
-
-// Simple pages (Config, Login, Setup, Details)
-export {
-  useConfigScheduler,
-  useDetailsScheduler,
-  useLoginScheduler,
-  useSetupScheduler,
-  useSimpleDebounce,
-  useSimplePageScheduler,
-  useSimpleThrottle,
-  useSimpleTimeout,
-} from './pages/simple'
-
-// Tapp
-export {
-  cleanupTapp,
-  useTappScheduler,
-  useTappStagger,
-  useTappVisibility,
-} from './pages/tapp'
 
 // ==================== 类型定义 ====================
 export type {
@@ -228,9 +174,6 @@ export { useLoopAnimation } from './useLoopAnimation'
 export { usePageReady } from './usePageReady'
 // 导出 Hooks
 export { pageTransitionManager, usePageTransition } from './usePageTransition'
-
-// 🔧 新增：路由调度器整合 Hook
-export { usePageScheduler, useRouteScheduler } from './useRouteScheduler'
 
 export { useStaggerAnimation } from './useStaggerAnimation'
 

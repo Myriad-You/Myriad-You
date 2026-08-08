@@ -1,19 +1,15 @@
 /**
- * Shared built-in widget catalog for Home and Control Panel.
- * Single source of truth for ids, components, sizes, and i18n name keys.
+ * Built-in widget catalog for the static site home grid.
+ * 仅保留无需后端的活体小组件(welcome / weather)
+ * 与静态官网板块卡(site-card,内容来自 content/site.ts)。
  */
 
 import type { ComponentType } from 'react'
 import type { TranslationKeys } from '../../i18n'
 import type { WidgetComponentProps, WidgetSize, WidgetType } from '../WidgetGrid'
 import { lazy } from 'react'
-import {
-  preloadReportCardsForTypes,
-  ReportCardHost,
-} from './reportCardHost'
 
-// 非报告小组件：React.lazy + 与 preload 共用 Promise。
-// 报告卡见 ReportCardHost——禁止渲染期 lazy（会破坏多卡 face 入场）。
+// React.lazy + 与 preload 共用 Promise。
 function lazyWidget<K extends string>(
   factory: () => Promise<Record<K, ComponentType<WidgetComponentProps>>>,
   name: K,
@@ -29,39 +25,6 @@ function lazyWidget<K extends string>(
   return component
 }
 
-const FriendLinksWidget = lazyWidget(
-  () => import('./FriendLinksWidget'),
-  'FriendLinksWidget',
-)
-const GamePresenceWidget = lazyWidget(
-  () => import('./GamePresenceWidget'),
-  'GamePresenceWidget',
-)
-const MusicPlayerWidget = lazyWidget(
-  () => import('./MusicPlayerWidget'),
-  'MusicPlayerWidget',
-)
-const QuickStatsWidget = lazyWidget(
-  () => import('./QuickStatsWidget'),
-  'QuickStatsWidget',
-)
-const QuoteWidget = lazyWidget(() => import('./QuoteWidget'), 'QuoteWidget')
-const RecentActivityWidget = lazyWidget(
-  () => import('./RecentActivityWidget'),
-  'RecentActivityWidget',
-)
-const SocialNetworkWidget = lazyWidget(
-  () => import('./SocialNetworkWidget'),
-  'SocialNetworkWidget',
-)
-const TappShortcutWidget = lazyWidget(
-  () => import('./TappShortcutWidget'),
-  'TappShortcutWidget',
-)
-const VisitorStatsWidget = lazyWidget(
-  () => import('./VisitorStatsWidget'),
-  'VisitorStatsWidget',
-)
 const WeatherWidget = lazyWidget(
   () => import('./WeatherWidget'),
   'WeatherWidget',
@@ -69,6 +32,10 @@ const WeatherWidget = lazyWidget(
 const WelcomeWidget = lazyWidget(
   () => import('./WelcomeWidget'),
   'WelcomeWidget',
+)
+const SiteCardWidget = lazyWidget(
+  () => import('./SiteCardWidget'),
+  'SiteCardWidget',
 )
 
 type WidgetsI18n = TranslationKeys['widgets']
@@ -80,183 +47,41 @@ export const BUILTIN_WIDGET_BASE_CONFIG = {
     component: WelcomeWidget,
     supportedSizes: ['2x2', '4x2'] as WidgetSize[],
   },
-  'quick-stats': {
-    defaultSize: '4x2' as WidgetSize,
-    component: QuickStatsWidget,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'recent-activity': {
-    defaultSize: '4x2' as WidgetSize,
-    component: RecentActivityWidget,
-    supportedSizes: ['2x2', '4x2', '4x4'] as WidgetSize[],
-  },
-  'friend-links': {
-    defaultSize: '4x2' as WidgetSize,
-    component: FriendLinksWidget,
-    supportedSizes: ['4x1', '2x2', '4x2'] as WidgetSize[],
-  },
   weather: {
     defaultSize: '2x2' as WidgetSize,
     component: WeatherWidget,
     supportedSizes: ['2x2', '4x2', '4x1'] as WidgetSize[],
   },
-  quote: {
+  'site-card': {
     defaultSize: '2x2' as WidgetSize,
-    component: QuoteWidget,
-    supportedSizes: ['2x2', '4x2', '4x1'] as WidgetSize[],
-  },
-  'music-player': {
-    defaultSize: '2x2' as WidgetSize,
-    component: MusicPlayerWidget,
-    supportedSizes: ['2x2', '4x2'] as WidgetSize[],
-  },
-  'report-bilibili': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-steam': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-github': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-youtube': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-netease': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-bangumi': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-mal': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-x': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-discord': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-xbox': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'report-psn': {
-    defaultSize: '4x2' as WidgetSize,
-    component: ReportCardHost,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'social-network': {
-    defaultSize: '1x1' as WidgetSize,
-    component: SocialNetworkWidget,
-    supportedSizes: ['1x1', '2x1', '2x2'] as WidgetSize[],
-  },
-  'tapp-shortcut': {
-    defaultSize: '1x1' as WidgetSize,
-    component: TappShortcutWidget,
-    supportedSizes: ['1x1', '2x1', '2x2'] as WidgetSize[],
-  },
-  'game-presence': {
-    defaultSize: '4x2' as WidgetSize,
-    component: GamePresenceWidget,
-    supportedSizes: ['4x2'] as WidgetSize[],
-  },
-  'visitor-stats': {
-    defaultSize: '4x2' as WidgetSize,
-    component: VisitorStatsWidget,
+    component: SiteCardWidget,
     supportedSizes: ['2x2', '4x2'] as WidgetSize[],
   },
 } as const
 
 export type BuiltinWidgetId = keyof typeof BUILTIN_WIDGET_BASE_CONFIG
 
-/** Stable catalog order (library UI) */
+/** Stable catalog order */
 const BUILTIN_WIDGET_ORDER: BuiltinWidgetId[] = [
   'welcome',
-  'quick-stats',
-  'recent-activity',
-  'friend-links',
   'weather',
-  'quote',
-  'music-player',
-  'report-bilibili',
-  'report-steam',
-  'report-github',
-  'report-youtube',
-  'report-netease',
-  'report-bangumi',
-  'report-mal',
-  'report-x',
-  'report-discord',
-  'report-xbox',
-  'report-psn',
-  'social-network',
-  'tapp-shortcut',
-  'game-presence',
-  'visitor-stats',
+  'site-card',
 ]
 
-/** Map widget id → t.widgets key */
-const WIDGET_NAME_KEY: Record<BuiltinWidgetId, keyof WidgetsI18n> = {
+/** Map widget id → t.widgets key(site-card 名称来自 content/site.ts,不走 i18n) */
+const WIDGET_NAME_KEY: Partial<Record<BuiltinWidgetId, keyof WidgetsI18n>> = {
   welcome: 'welcome',
-  'quick-stats': 'quickStats',
-  'recent-activity': 'recentActivity',
-  'friend-links': 'friendLinks',
   weather: 'weather',
-  quote: 'quote',
-  'music-player': 'musicPlayer',
-  'report-bilibili': 'reportBilibili',
-  'report-steam': 'reportSteam',
-  'report-github': 'reportGithub',
-  'report-youtube': 'reportYoutube',
-  'report-netease': 'reportNetease',
-  'report-bangumi': 'reportBangumi',
-  'report-mal': 'reportMal',
-  'report-x': 'reportX',
-  'report-discord': 'reportDiscord',
-  'report-xbox': 'reportXbox',
-  'report-psn': 'reportPsn',
-  'social-network': 'socialNetwork',
-  'tapp-shortcut': 'tappShortcut',
-  'game-presence': 'gamePresence',
-  'visitor-stats': 'visitorStats',
 }
 
 /**
- * 预加载布局中用到的小组件实现（须在 setWidgets / 入场前 await）。
- * - report-*：壳 + **仅布局出现的平台 face**（非全平台）
- * - 其它：lazyWidget shared Promise
+ * 预加载布局中用到的小组件实现(须在 setWidgets / 入场前 await)。
  */
 export function preloadBuiltinWidgets(types: Iterable<string>): Promise<void> {
-  const typeList = Array.from(types)
   const jobs: Promise<unknown>[] = []
   const seen = new Set<unknown>()
-  let hasReport = false
 
-  for (const type of typeList) {
-    if (type.startsWith('report-')) {
-      hasReport = true
-      continue // 报告走下面专用预热，避免只 preload 壳漏 face
-    }
+  for (const type of Array.from(types)) {
     const base = BUILTIN_WIDGET_BASE_CONFIG[type as BuiltinWidgetId]
     if (!base || seen.has(base.component)) continue
     seen.add(base.component)
@@ -266,23 +91,19 @@ export function preloadBuiltinWidgets(types: Iterable<string>): Promise<void> {
     if (preload) jobs.push(preload().catch(() => {}))
   }
 
-  if (hasReport) {
-    jobs.push(preloadReportCardsForTypes(typeList).catch(() => {}))
-  }
-
   return Promise.all(jobs).then(() => undefined)
 }
 
 /**
  * Built-in WidgetType[] with localized names.
- * Used by Home and ControlPanelWidgets (plus Tapp widgets merged by callers).
  */
 export function getBuiltinWidgets(widgetsI18n: WidgetsI18n): WidgetType[] {
   return BUILTIN_WIDGET_ORDER.map((id) => {
     const base = BUILTIN_WIDGET_BASE_CONFIG[id]
+    const nameKey = WIDGET_NAME_KEY[id]
     return {
       id,
-      name: widgetsI18n[WIDGET_NAME_KEY[id]],
+      name: nameKey ? widgetsI18n[nameKey] : '官网板块',
       defaultSize: base.defaultSize,
       component: base.component,
       supportedSizes: [...base.supportedSizes],

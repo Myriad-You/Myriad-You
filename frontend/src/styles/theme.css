@@ -18,21 +18,25 @@
   inherits: true;
   initial-value: #6b7280;
 }
+
 @property --music-secondary {
   syntax: '<color>';
   inherits: true;
   initial-value: #9ca3af;
 }
+
 @property --music-accent {
   syntax: '<color>';
   inherits: true;
   initial-value: #4b5563;
 }
+
 @property --music-light {
   syntax: '<color>';
   inherits: true;
   initial-value: #d1d5db;
 }
+
 @property --music-dark {
   syntax: '<color>';
   inherits: true;
@@ -304,8 +308,10 @@ html.dark #bg-container.wallpaper-awaiting #wallpaper-awaiting-fx::after {
 :root {
   /* 基色（随明暗切换）；--surface-alpha 是透明度的抽象点，各组件可覆盖以保留自身配置 */
   --surface-rgb: 255 255 255;
+
   /* 默认底略提高透明度（更透一点点）；档位类 glass-60/70/90/95 仍可覆盖 */
   --surface-alpha: 74%;
+
   /* 边框：浅色提高透明度（更透、更淡）；仍是单层 1px solid（暗色见 html.dark） */
   --surface-border: rgb(255 255 255 / 10%);
   --surface-filter: blur(16px) saturate(180%);
@@ -332,6 +338,7 @@ html.dark #bg-container.wallpaper-awaiting #wallpaper-awaiting-fx::after {
 
 html.dark {
   --surface-rgb: 26 26 26;
+
   /* 暗色：低白度细边，靠底发丝 + 外影勾轮廓，避免发白 */
   --surface-border: rgb(255 255 255 / 12%);
   --surface-sheen: linear-gradient(
@@ -538,6 +545,7 @@ html.dark.surface-lens[data-surface='liquid'] {
   :root[data-surface='liquid']
     :is(.glass, .glass-surface):is(a, button, [role='button'], .cursor-pointer):hover {
     transform: translateY(-1px) scale(1.012);
+
     /* !important：压过上方 .glass 令牌夺回，保留流体悬停加亮边 */
     border-color: rgb(255 255 255 / 70%) !important;
   }
@@ -605,16 +613,13 @@ html.dark.surface-lens[data-surface='liquid'] .surface-dialog {
    2. .glass-surface  手写玻璃卡的统一底（Tapp/Brew 卡片、控制岛等）：
                       替代内联 `bg-white/X dark:bg-Y backdrop-blur-Z`，
                       边框/阴影/圆角仍由使用处的工具类保留
-   3. 浮动 chrome     （导航岛/控制面板/页脚/AI 面板）各自硬编码了调校过的
+   3. 浮动 chrome     （控制栏/页脚）各自硬编码了调校过的
                       玻璃质感，默认态保留原样，仅切非玻璃表面时收敛跟随
    ============================================ */
 .glass,
 .glass-surface,
-:root[data-surface] .dynamic-island,
-:root[data-surface] .secondary-island,
 :root[data-surface] .control-bar-trigger,
-:root[data-surface] .site-footer-content,
-:root[data-surface] .arael-panel {
+:root[data-surface] .site-footer-content {
   /* --surface-bg 是逃逸令牌：表面模式可用它声明任意背景表达式
      （如 liquid 的 color-mix 吸色），未声明时回落到基色+透明度 */
   background: var(--surface-bg, rgb(var(--surface-rgb) / var(--surface-alpha)));
@@ -641,20 +646,10 @@ html.dark.surface-lens[data-surface='liquid'] .surface-dialog {
    .glass-surface 仍按设计保留使用处工具类，不在此夺回。 */
 html
   .glass:where(
-    :not([class*='border-red']):not([class*='border-rose']):not(
-        [class*='border-amber']
-      ):not([class*='border-orange']):not([class*='border-yellow']):not(
-        [class*='border-green']
-      ):not([class*='border-emerald']):not(.glass-chrome-free)
-  ),
+    :not([class*='border-red'], [class*='border-rose'], [class*='border-amber'], [class*='border-orange'], [class*='border-yellow'], [class*='border-green'], [class*='border-emerald'], .glass-chrome-free)),
 html.dark
   .glass:where(
-    :not([class*='border-red']):not([class*='border-rose']):not(
-        [class*='border-amber']
-      ):not([class*='border-orange']):not([class*='border-yellow']):not(
-        [class*='border-green']
-      ):not([class*='border-emerald']):not(.glass-chrome-free)
-  ) {
+    :not([class*='border-red'], [class*='border-rose'], [class*='border-amber'], [class*='border-orange'], [class*='border-yellow'], [class*='border-green'], [class*='border-emerald'], .glass-chrome-free)) {
   border-color: var(--surface-border) !important;
 }
 

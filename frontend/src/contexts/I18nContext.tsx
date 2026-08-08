@@ -82,14 +82,6 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
     saveLocale(newLocale)
-    void import('../utils/analyticsEvents').then(
-      ({ trackProductEvent, AnalyticsEvents }) => {
-        trackProductEvent(AnalyticsEvents.LOCALE_SWITCH, {
-          target: newLocale,
-          throttleMs: 3000,
-        })
-      },
-    )
   }, [])
 
   // HTML lang 与「已生效」的语言包对齐，避免文案未到却改了 lang

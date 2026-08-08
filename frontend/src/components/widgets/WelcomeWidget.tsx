@@ -3,15 +3,15 @@
  * Glass风格设计，左右布局，动态引导内容
  */
 
+import type { LucideIcon } from 'lucide-react'
 import type { WidgetComponentProps } from '../WidgetGrid'
-import { MyriadStoreIcon } from '@lib/icons'
 import {
   AnimatePresenceShim as AnimatePresence,
   motionShim as motion,
 } from '@lib/motionShim'
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { getSections } from '../../content/site'
 import { useI18n } from '../../contexts/I18nContext'
 import {
   useHomeVisibilityInterval,
@@ -19,6 +19,7 @@ import {
 } from '../../hooks/animation'
 import { useAnimationLevel } from '../../hooks/useAnimationLevel'
 import { useWidgetSize } from '../../hooks/useWidgetSize'
+import { requestOpenSection } from '../../utils/sectionEvents'
 import { ClampText, FitText } from './shared/FitText'
 import { GlowBackground } from './shared/GlowBackground'
 import { WidgetShell } from './shared/WidgetShell'
@@ -28,11 +29,14 @@ interface NavigationGuide {
   title: string
   description: string
   features: string[]
-  path: string
-  color: string
+  sectionId: string
+  icon: LucideIcon
 }
 
 const WELCOME_ICON_ASSET = '/icons/widgets/welcome.webp'
+
+/** 引导卡轮播的板块(顺序即轮播顺序;与首页可见板块卡保持一致) */
+const GUIDE_SECTION_IDS = ['features', 'intro', 'config-generator', 'about']
 
 export const WelcomeWidget = memo(
   ({ config, isEditMode, isPreview }: WidgetComponentProps) => {
@@ -54,42 +58,24 @@ export const WelcomeWidget = memo(
     const canAnimate = anim.loop && isAnimating
     const welcomeIconSize = 34 * fontScale
 
-    const navigate = useNavigate()
     const [currentGuideIndex, setCurrentGuideIndex] = useState(0)
     const [greeting, setGreeting] = useState('')
 
-    // Navigation guides with i18n
-    const navigationGuides = useMemo(
-      () => [
-        {
-          title: t.widgets.library,
-          description: t.widgets.multiPlatformAggregation,
-          features: [t.widgets.showPersonality],
-          path: '/library',
-          color: '#8b5cf6',
-        },
-        {
-          title: t.widgets.dataReport,
-          description: t.widgets.dualLayerAnalysis,
-          features: [t.widgets.platformProfile],
-          path: '/reports',
-          color: '#06b6d4',
-        },
-        {
-          title: t.widgets.brewReading,
-          description: t.widgets.brewDesc,
-          features: [t.widgets.brewFeature],
-          path: '/brew',
-          color: '#f97316',
-        },
-        {
-          title: t.widgets.tappApps,
-          description: t.widgets.tappDesc,
-          features: [t.widgets.tappFeature],
-          path: '/tapp',
-          color: '#10b981',
-        },
-      ],
+    // Navigation guides - 来自静态官网板块(content/site.ts,文案经 i18n 解析)
+    const navigationGuides = useMemo<NavigationGuide[]>(
+      () => {
+        const sections = getSections(t)
+        return GUIDE_SECTION_IDS.map((id) => {
+          const section = sections.find((s) => s.id === id) ?? sections[0]
+          return {
+            title: section.title,
+            description: section.summary,
+            features: section.detail.list?.slice(0, 1) ?? [],
+            sectionId: section.id,
+            icon: section.icon,
+          }
+        })
+      },
       [t],
     )
 
@@ -124,9 +110,9 @@ export const WelcomeWidget = memo(
 
     const handleGuideClick = useCallback(() => {
       if (!isEditMode && currentGuide) {
-        navigate(currentGuide.path)
+        requestOpenSection(currentGuide.sectionId)
       }
-    }, [isEditMode, currentGuide, navigate])
+    }, [isEditMode, currentGuide])
 
     const renderWelcomeIcon = useCallback(
       () => (
@@ -163,62 +149,10 @@ export const WelcomeWidget = memo(
     // 4x2 预算收紧：英语两行问候不能撑满列高，要给日期/轮播点留出呼吸
     const greetingBoxHeight = Math.round((height || 140) * (is2x2 ? 0.44 : 0.3))
 
-    // 渲染导航图标 - 使用 useCallback 避免重复创建，与导航岛图标保持一致
+    // 渲染导航图标 - 使用板块自带的 Lucide 图标
     const renderNavIcon = useCallback((guide: NavigationGuide) => {
-      const iconClass = 'w-5 h-5'
-      if (guide.path === '/library') {
-        return (
-          <svg
-            className={iconClass}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-            />
-          </svg>
-        )
-      }
-      if (guide.path === '/reports') {
-        return (
-          <svg
-            className={iconClass}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
-            />
-          </svg>
-        )
-      }
-      if (guide.path === '/brew') {
-        return (
-          <svg
-            className={iconClass}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"
-            />
-          </svg>
-        )
-      }
-      // Tapp 应用 - 使用 Myriad 自有商店线性图标
-      return <MyriadStoreIcon className={iconClass} />
+      const GuideIcon = guide.icon
+      return <GuideIcon className="w-5 h-5" />
     }, [])
 
     // 2x2 布局 - 简化版，只显示问候语，保持左上角布局

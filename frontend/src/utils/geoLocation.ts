@@ -12,9 +12,6 @@
  * - 中国大陆检测结果缓存在内存中（页面生命周期内）
  */
 
-import { API_URL } from '../config'
-import { dedupedFetch } from './requestDedup'
-
 // ===== 类型定义 =====
 
 export interface GeoLocationData {
@@ -104,20 +101,7 @@ export async function getClientGeoLocation(): Promise<GeoLocationData | null> {
     return geoLocationCache
   }
 
-  try {
-    // 2. 通过后端代理获取（最准确，能获取真实客户端IP）
-    const data = await getClientGeoFromBackend()
-
-    if (data) {
-      geoLocationCache = data
-      geoLocationCacheTime = Date.now()
-      return data
-    }
-  } catch (error) {
-    console.warn('[GeoLocation] 后端代理获取失败，尝试备用服务:', error)
-  }
-
-  // 3. 尝试备用服务
+  // 2. 静态官网无后端代理，直接使用浏览器侧 IP 定位服务
   try {
     const data = await getGeoFromFallbackServices()
 
@@ -259,55 +243,6 @@ export function resetGeoCache(): void {
 }
 
 // ===== 内部实现 =====
-
-/**
- * 通过后端代理获取地理位置
- */
-async function getClientGeoFromBackend(): Promise<GeoLocationData | null> {
-  const data = await dedupedFetch<GeoApiResponse>(
-    `${API_URL}/api/proxy/client-geo`,
-    async () => {
-      const response = await fetch(`${API_URL}/api/proxy/client-geo`, {
-        signal: AbortSignal.timeout(10000),
-      })
-      if (!response.ok) throw new Error('Failed to fetch client geo')
-      return response.json()
-    },
-    { cacheTTL: GEO_CACHE_TTL },
-  )
-
-  // Server-egress means proxy/backend only saw a private hop and substituted the
-  // host public IP — that is the server location, not the visitor. Soft-fail so
-  // browser-side IP geo (ipapi.co etc.) can still use the real client egress.
-  if (
-    data.source === 'server-egress' ||
-    data.fallback === 'server-public-ip'
-  ) {
-    console.warn(
-      '[GeoLocation] Backend used server egress IP (proxy client-IP trust broken).',
-      {
-        detected: data.detected_client_ip,
-        lookupIp: data.ip,
-      },
-    )
-    return null
-  }
-
-  if (data.status === 'success' || (data.lat && data.lon)) {
-    return {
-      latitude: data.lat!,
-      longitude: data.lon!,
-      city: data.city || data.regionName || data.country || '未知',
-      country: data.country,
-      // Backend may send camelCase (ip-api) or snake_case (ipapi.co alias).
-      countryCode: data.countryCode || data.country_code,
-      region: data.regionName,
-      ip: data.ip,
-    }
-  }
-
-  return null
-}
 
 /**
  * 通过备用服务获取地理位置

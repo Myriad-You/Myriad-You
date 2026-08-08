@@ -12,7 +12,6 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
 import { usePageTransition } from '../hooks/animation/usePageTransition'
 
 interface AnimatedViewProps {
@@ -24,8 +23,8 @@ export default function AnimatedView({
   children,
   className = '',
 }: AnimatedViewProps) {
-  const location = useLocation()
-  const pageId = location.pathname.replace(/\//g, '-') || 'home'
+  // 单页官网:固定 pageId
+  const pageId = 'home'
 
   // 使用统一动画协调器（现在只用于状态管理，不做动画）
   const { onEnterComplete } = usePageTransition({ pageId })
@@ -49,7 +48,7 @@ export default function AnimatedView({
       if (rafId !== null) cancelAnimationFrame(rafId)
       hasNotified.current = false
     }
-  }, [location.pathname, onEnterComplete])
+  }, [onEnterComplete])
 
   return (
     <div className={`animated-view-container ${className}`}>{children}</div>

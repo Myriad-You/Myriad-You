@@ -1,21 +1,19 @@
 /**
- * 标题字体管理 Hook
- * 按需加载 Astro Fonts API 自托管的标题装饰字体，并管理全局标题字体、大小和颜色设置
+ * 标题字体管理 Hook(静态官网版)
+ * 按需加载 Astro Fonts API 自托管的标题装饰字体,并管理全局标题字体、大小和颜色设置
+ * 静态站点无后端:初始状态使用默认配置,修改仅保留在会话内(不落盘)。
  *
  * 性能优化：
  * - 字体懒加载 + 缓存（仅当前/默认字体在 init 时加载；全量预加载仅在选择器打开时）
  * - document.fonts.load 使用各字体实际字重，避免拉错 face
- * - 防抖保存
  * - 全局状态共享避免重复请求
  * - useMemo 缓存计算结果
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { API_URL } from '../config'
 import { usePrimaryColor } from '../utils/colorSubscriber'
 import { deriveAdaptiveTitleColor } from '../utils/readableColor'
-import { getUIConfigDeduped } from '../utils/requestDedup'
 import { useThemeMode } from '../utils/themeSubscriber'
 
 // ==================== 类型定义 ====================
@@ -249,7 +247,6 @@ let globalState: TitleStyle = {
 
 const listeners = new Set<TitleStyleListener>()
 let isGlobalInitialized = false
-let initPromise: Promise<void> | null = null
 
 function notifyListeners() {
   const state = { ...globalState }
@@ -261,100 +258,14 @@ function updateGlobalState(updates: Partial<TitleStyle>) {
   notifyListeners()
 }
 
-// 防抖保存：合并 500ms 窗口内的多次字段修改，避免后写整包冲掉前写
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
-const SAVE_DEBOUNCE_MS = 500
-let pendingSave: Partial<{
-  title_font: string
-  title_font_size: number
-  title_color: string
-}> = {}
-let pendingCsrfToken = ''
-
-async function debouncedSave(
-  csrfToken: string,
-  settings: Partial<{
-    title_font: string
-    title_font_size: number
-    title_color: string
-  }>,
-) {
-  pendingSave = { ...pendingSave, ...settings }
-  pendingCsrfToken = csrfToken || pendingCsrfToken
-
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
-  }
-
-  saveTimeout = setTimeout(async () => {
-    const payload = { ...pendingSave }
-    const token = pendingCsrfToken
-    pendingSave = {}
-    pendingCsrfToken = ''
-    saveTimeout = null
-    if (Object.keys(payload).length === 0) return
-    try {
-      await fetch(`${API_URL}/api/config/dashboard`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': token,
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
-    } catch (err) {
-      console.error('保存标题样式失败:', err)
-    }
-  }, SAVE_DEBOUNCE_MS)
-}
-
-// 初始化全局状态
+// 初始化全局状态(静态站点:无后端配置,直接预加载默认字体)
 async function initGlobalState(): Promise<void> {
   if (isGlobalInitialized) return
-  if (initPromise) return initPromise
-
-  initPromise = (async () => {
-    try {
-      const data = await getUIConfigDeduped()
-      if (!data) return
-
-      // 批量更新状态
-      const updates: Partial<TitleStyle> = {}
-
-      if (data.title_font && fontMap.has(data.title_font)) {
-        updates.font = data.title_font
-        const font = fontMap.get(data.title_font)
-        if (font) loadFont(font) // 异步加载，不阻塞
-      }
-
-      if (data.title_font_size != null) {
-        const fontSize = Number(data.title_font_size)
-        if (!Number.isNaN(fontSize) && sizeMap.has(fontSize)) {
-          updates.fontSize = fontSize
-        }
-      }
-
-      if (data.title_color && colorMap.has(data.title_color)) {
-        updates.color = data.title_color
-      }
-
-      if (Object.keys(updates).length > 0) {
-        updateGlobalState(updates)
-      }
-    } catch (err) {
-      console.error('加载标题样式设置失败:', err)
-    } finally {
-      isGlobalInitialized = true
-      initPromise = null
-    }
-  })()
+  isGlobalInitialized = true
 
   // 预加载默认字体
   const defaultFont = AVAILABLE_FONTS[0]
-  loadFont(defaultFont)
-
-  return initPromise
+  await loadFont(defaultFont)
 }
 
 // ==================== Hook ====================
@@ -397,42 +308,30 @@ export function useTitleFont() {
     }
   }, [])
 
-  // 设置字体
-  const setTitleFont = useCallback(
-    async (fontId: string, csrfToken?: string) => {
-      const font = fontMap.get(fontId)
-      if (!font) return
+  // 设置字体(仅会话内生效)
+  const setTitleFont = useCallback(async (fontId: string) => {
+    const font = fontMap.get(fontId)
+    if (!font) return
 
-      setIsLoading(true)
-      try {
-        await loadFont(font)
-        updateGlobalState({ font: fontId })
-        if (csrfToken) {
-          debouncedSave(csrfToken, { title_font: fontId })
-        }
-      } finally {
-        if (mountedRef.current) {
-          setIsLoading(false)
-        }
+    setIsLoading(true)
+    try {
+      await loadFont(font)
+      updateGlobalState({ font: fontId })
+    } finally {
+      if (mountedRef.current) {
+        setIsLoading(false)
       }
-    },
-    [],
-  )
-
-  // 设置字体大小
-  const setTitleFontSize = useCallback((size: number, csrfToken?: string) => {
-    updateGlobalState({ fontSize: size })
-    if (csrfToken) {
-      debouncedSave(csrfToken, { title_font_size: size })
     }
   }, [])
 
-  // 设置颜色
-  const setTitleColor = useCallback((colorId: string, csrfToken?: string) => {
+  // 设置字体大小(仅会话内生效)
+  const setTitleFontSize = useCallback((size: number) => {
+    updateGlobalState({ fontSize: size })
+  }, [])
+
+  // 设置颜色(仅会话内生效)
+  const setTitleColor = useCallback((colorId: string) => {
     updateGlobalState({ color: colorId })
-    if (csrfToken) {
-      debouncedSave(csrfToken, { title_color: colorId })
-    }
   }, [])
 
   // 预加载所有字体

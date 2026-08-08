@@ -143,7 +143,6 @@ img[loading='lazy'] {
 html[data-perf-mode='light'] [class*='backdrop-blur'],
 html[data-perf-mode='exlight'] [class*='backdrop-blur'] {
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
 /* ---------- exlight only（弱硬件低档 / prefers-reduced-motion）---------- */
@@ -170,7 +169,6 @@ html[data-perf-mode='exlight'] *,
 html[data-perf-mode='exlight'] *::before,
 html[data-perf-mode='exlight'] *::after {
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
 /*
@@ -185,18 +183,14 @@ html[data-perf-mode='exlight']:not([data-surface]) .glass-surface {
 }
 
 /*
- * 硬编码半透明底的浮动 chrome（导航岛 / 控制岛 / 页脚）不读 --surface-alpha。
+ * 硬编码半透明底的浮动 chrome（控制栏 / 页脚）不读 --surface-alpha。
  * 仅默认玻璃表面时抬不透明；用户切了表面主题时跟随主题令牌（见 theme.css）。
  */
-html[data-perf-mode='exlight']:not([data-surface]) .dynamic-island,
-html[data-perf-mode='exlight']:not([data-surface]) .secondary-island,
 html[data-perf-mode='exlight']:not([data-surface]) .control-bar-trigger,
 html[data-perf-mode='exlight']:not([data-surface]) .site-footer-content {
   background: rgb(255 255 255 / 96%) !important;
 }
 
-html.dark[data-perf-mode='exlight']:not([data-surface]) .dynamic-island,
-html.dark[data-perf-mode='exlight']:not([data-surface]) .secondary-island,
 html.dark[data-perf-mode='exlight']:not([data-surface]) .control-bar-trigger,
 html.dark[data-perf-mode='exlight']:not([data-surface]) .site-footer-content {
   background: rgb(26 26 26 / 96%) !important;
@@ -337,12 +331,15 @@ html[data-perf-mode='exlight'] [class*='backdrop-blur'][class*='dark:bg-neutral-
 html[data-perf-mode='exlight'] [class*='backdrop-blur'][class*='bg-[#fff9f0]/80'] {
   background-color: #fff9f0 !important;
 }
+
 html[data-perf-mode='exlight'] [class*='backdrop-blur'][class*='bg-[#faf4e6]/80'] {
   background-color: #faf4e6 !important;
 }
+
 html[data-perf-mode='exlight'] [class*='backdrop-blur'][class*='bg-[#242424]/80'] {
   background-color: #242424 !important;
 }
+
 html[data-perf-mode='exlight'] [class*='backdrop-blur'][class*='bg-[#161b22]/80'] {
   background-color: #161b22 !important;
 }

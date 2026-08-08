@@ -1,5 +1,9 @@
-import { API_URL } from '../config'
-import apiService from '../services/api'
+/**
+ * 一言(每日格言)工具 —— 静态官网版
+ *
+ * 直接请求一言公共 API(v1.hitokoto.cn 支持 CORS),不再走后端代理;
+ * 失败回退本地句库。10 分钟 localStorage 缓存,避免频繁请求。
+ */
 
 export interface QuoteData {
   text: string
@@ -10,7 +14,7 @@ export interface QuoteData {
 export interface HitokotoSource {
   /** 源 ID */
   id: string
-  /** API 地址（自定义源为用户填写） */
+  /** API 地址 */
   url: string
   /** JSON 响应中一言正文对应的字段名 */
   textField: string
@@ -53,114 +57,10 @@ export const BUILTIN_HITOKOTO_SOURCES: Record<string, HitokotoSource> = {
 /** 默认一言源 ID */
 export const DEFAULT_HITOKOTO_SOURCE_ID = 'hitokoto-cn'
 
-/** 一言配置（存储于后端数据库，随全局保存流程持久化） */
-export interface HitokotoConfig {
-  /** 选中的源 ID，或 'custom' 表示自定义 */
-  sourceId: string
-  /** 自定义 API 地址（sourceId === 'custom' 时生效） */
-  customUrl?: string
-  /** 自定义正文字段名 */
-  customTextField?: string
-  /** 自定义出处字段名 */
-  customAuthorField?: string
-}
-
-interface HitokotoConfigResponse {
-  success: boolean
-  config?: HitokotoConfig
-  message?: string
-}
-
-export const DEFAULT_HITOKOTO_CONFIG: HitokotoConfig = {
-  sourceId: DEFAULT_HITOKOTO_SOURCE_ID,
-}
-
+/**
+ * 一言配置更新事件(静态站点配置不可变更,事件保留仅为接口兼容)
+ */
 export const HITOKOTO_CONFIG_UPDATED_EVENT = 'hitokoto-config-updated'
-
-export function normalizeHitokotoConfig(
-  config?: Partial<HitokotoConfig>,
-): HitokotoConfig {
-  return {
-    sourceId:
-      typeof config?.sourceId === 'string'
-        ? config.sourceId
-        : DEFAULT_HITOKOTO_SOURCE_ID,
-    customUrl: config?.customUrl,
-    customTextField: config?.customTextField,
-    customAuthorField: config?.customAuthorField,
-  }
-}
-
-/** 从后端读取一言配置 */
-export async function fetchHitokotoConfig(): Promise<HitokotoConfig> {
-  const response = await apiService.get<HitokotoConfigResponse>(
-    '/config/hitokoto',
-  )
-  return normalizeHitokotoConfig(response.config)
-}
-
-/** 保存一言配置到后端，并清除本地一言缓存，使新设置立即生效 */
-export async function updateHitokotoConfig(
-  config: HitokotoConfig,
-): Promise<HitokotoConfig> {
-  const response = await apiService.put<HitokotoConfigResponse>(
-    '/config/hitokoto',
-    config,
-  )
-  if (!response.success) {
-    throw new Error(response.message || 'Failed to save hitokoto config')
-  }
-  const saved = normalizeHitokotoConfig(response.config)
-  // 切换源后旧缓存失效
-  localStorage.removeItem('quote_cache')
-  localStorage.removeItem('quote_cache_time')
-  localStorage.removeItem('quote_cache_source')
-  localStorage.removeItem('quote_data_cache')
-  window.dispatchEvent(
-    new CustomEvent(HITOKOTO_CONFIG_UPDATED_EVENT, { detail: saved }),
-  )
-  return saved
-}
-
-/** 比较两份一言配置是否等价（用于统一保存流程的脏检测） */
-export function areHitokotoConfigsEqual(
-  left: HitokotoConfig,
-  right: HitokotoConfig,
-): boolean {
-  return (
-    left.sourceId === right.sourceId &&
-    (left.customUrl ?? '') === (right.customUrl ?? '') &&
-    (left.customTextField ?? '') === (right.customTextField ?? '') &&
-    (left.customAuthorField ?? '') === (right.customAuthorField ?? '')
-  )
-}
-
-/** 根据配置解析出当前生效的一言源 */
-export async function resolveHitokotoSource(
-  config?: HitokotoConfig,
-): Promise<HitokotoSource | null> {
-  const resolved = config ?? (await fetchHitokotoConfig())
-  return resolveHitokotoSourceFromConfig(resolved)
-}
-
-function resolveHitokotoSourceFromConfig(
-  config: HitokotoConfig,
-): HitokotoSource | null {
-  if (config.sourceId === 'custom') {
-    const url = config.customUrl?.trim()
-    if (!url) return null
-    return {
-      id: 'custom',
-      url,
-      textField: config.customTextField?.trim() || 'hitokoto',
-      authorField: config.customAuthorField?.trim() || 'from',
-    }
-  }
-  return (
-    BUILTIN_HITOKOTO_SOURCES[config.sourceId] ??
-    BUILTIN_HITOKOTO_SOURCES[DEFAULT_HITOKOTO_SOURCE_ID]
-  )
-}
 
 /**
  * 获取一言警句
@@ -168,15 +68,7 @@ function resolveHitokotoSourceFromConfig(
 export async function getRandomQuote(
   locale?: string,
 ): Promise<QuoteData | null> {
-  let source: HitokotoSource | null
-  try {
-    source = await resolveHitokotoSource()
-  } catch (error) {
-    console.warn('Failed to load hitokoto config:', error)
-    return getLocalQuote(locale)
-  }
-  // 自定义源未填写地址时，直接回退本地句库
-  if (!source) return getLocalQuote(locale)
+  const source = BUILTIN_HITOKOTO_SOURCES[DEFAULT_HITOKOTO_SOURCE_ID]
 
   try {
     // 从 localStorage 读取缓存（缓存需匹配当前源地址）
@@ -192,14 +84,7 @@ export async function getRandomQuote(
       }
     }
 
-    // 使用后端代理访问一言 API（解决 CORS 问题）
-    // 默认源无需传 url，自定义/其他语言源通过 url 参数转发
-    const proxyUrl =
-      source.id === DEFAULT_HITOKOTO_SOURCE_ID
-        ? `${API_URL}/api/proxy/hitokoto`
-        : `${API_URL}/api/proxy/hitokoto?url=${encodeURIComponent(source.url)}`
-
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(source.url, {
       signal: AbortSignal.timeout(10000),
     })
 

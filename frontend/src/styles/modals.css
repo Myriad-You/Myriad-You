@@ -24,6 +24,13 @@ html.dark .modal-overlay-portal {
   background-color: rgb(0 0 0 / 60%);
 }
 
+/* 由 framer-motion 驱动的弹窗(DetailModal):透明度/位移交给 motion
+   逐帧内联控制,关掉基类里的 opacity 初值与 CSS 过渡,避免互相拉扯 */
+.modal-overlay-portal.modal-motion {
+  opacity: 1;
+  transition: none;
+}
+
 .modal-overlay-portal.modal-opening {
   opacity: 1;
 }
@@ -70,7 +77,7 @@ html.dark .modal-content {
 @keyframes scale-in {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.95) translateY(12px);
   }
 
   to {
@@ -97,24 +104,26 @@ html.dark .modal-content {
 
   to {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.95) translateY(12px);
   }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.25s ease-out;
+  animation: fade-in 0.25s ease-out both;
 }
 
 .animate-fade-out {
-  animation: fade-out 0.2s ease-in;
+  animation: fade-out 0.2s ease-in both;
 }
 
+/* 开合统一用 Apple 式减速曲线;both 填充,动画结束保持末帧,
+   避免卸载定时器晚于动画结束时元素跳回初始状态(收回闪一下) */
 .animate-scale-in {
-  animation: scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scale-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 .animate-scale-out {
-  animation: scale-out 0.25s cubic-bezier(0.4, 0, 1, 1);
+  animation: scale-out 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* 移动端模态框优化 */
@@ -148,11 +157,11 @@ html.dark .modal-content {
   }
 
   .modal-overlay-portal.modal-opening .modal-content {
-    animation: slideUpMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUpMobile 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
   }
 
   .modal-overlay-portal.modal-closing .modal-content {
-    animation: slideDownMobile 0.25s cubic-bezier(0.4, 0, 1, 1);
+    animation: slideDownMobile 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
   @keyframes slideUpMobile {

@@ -12,7 +12,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
 
 import { observeResize } from '../hooks/animation'
 import {
@@ -82,7 +81,6 @@ const MIN_THUMB_HEIGHT = 40 // 最小 Thumb 高度（px）
  * 内部滚动条组件 - 只在桌面端渲染
  */
 function CustomScrollbarInner() {
-  const location = useLocation()
   const [isDragging, setIsDragging] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [isScrolling, setIsScrolling] = useState(false)
@@ -221,7 +219,7 @@ function CustomScrollbarInner() {
     }
   }, [updateThumb, handleUpdate])
 
-  // 监听路由变化，触发平滑过渡
+  // 挂载后触发一次平滑过渡(单页官网无路由切换,仅首挂载执行)
   useEffect(() => {
     if (!thumbRef.current) return
 
@@ -268,7 +266,7 @@ function CustomScrollbarInner() {
       // 清理时也要恢复标志
       isRouteTransitioningRef.current = false
     }
-  }, [location.pathname, updateThumb])
+  }, [updateThumb])
 
   // 显示/隐藏滚动条 + 滚动状态检测
   useEffect(() => {

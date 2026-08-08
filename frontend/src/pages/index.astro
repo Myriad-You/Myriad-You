@@ -1,10 +1,9 @@
 ---
 /**
- * SPA 外壳页面
+ * 单页官网外壳
  * 这是唯一的 Astro 页面，用于挂载 React 应用
  */
 import { Font } from 'astro:assets'
-import MachineReadableMetadata from '@components/MachineReadableMetadata.astro'
 import NoScriptFallback from '@components/NoScriptFallback.astro'
 import PageLoader from '@components/PageLoader.astro'
 import App from '../App'
@@ -13,10 +12,6 @@ import '../styles/tailwind.css'
 const title = 'Myriad - A myriad of lights, in one place.'
 const description =
   'Myriad 是一个自托管的个人数字生活展示入口，用于聚合、整理和展示来自多个平台的个人数据。'
-// Build-time version stamp consumed by the Myriad updater health probe.
-// Falls back to `dev` outside of release builds.
-const myriadVersion = import.meta.env.PUBLIC_MYRIAD_VERSION || 'dev'
-const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
 ---
 
 <!doctype html>
@@ -28,7 +23,6 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
     <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/webp" href="/favicon.webp" id="favicon-link" />
-    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Myriad" />
@@ -36,12 +30,6 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
 
     <!-- 安全策略 -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-
-    <!-- Build-time version stamp; consumed by the Myriad updater health probe to detect
-         stale browser caches after an upgrade. -->
-    <meta name="myriad-version" content={myriadVersion} />
-    <meta name="myriad-commit" content={myriadCommit} />
-    <MachineReadableMetadata description={description} version={myriadVersion} />
 
     <!-- Astro 6 内置 Fonts API: 全部字体自托管，消除 Google Fonts 外部请求 -->
     <!-- 主体字体（预加载） -->
@@ -61,13 +49,11 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
     <Font cssVariable="--font-unifraktur-maguntia" />
     <Font cssVariable="--font-cinzel" />
 
-    <!-- Resource Hints优化 - DNS预解析和预连接 -->
-    <link rel="dns-prefetch" href="https://api.fuukei.org" />
+    <!-- Resource Hints优化 - 小组件外部 API 的 DNS 预解析和预连接 -->
     <link rel="dns-prefetch" href="https://api.open-meteo.com" />
-    <link rel="dns-prefetch" href="https://avatars.githubusercontent.com" />
-    <!-- 关键外部 API 预连接（Lighthouse 建议） -->
-    <link rel="preconnect" href="https://api.fuukei.org" crossorigin />
-    <link rel="preconnect" href="https://avatars.githubusercontent.com" crossorigin />
+    <link rel="dns-prefetch" href="https://v1.hitokoto.cn" />
+    <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
+    <link rel="preconnect" href="https://v1.hitokoto.cn" crossorigin />
 
     <!-- 关键CSS内联 - 优化FCP -->
     <style>
@@ -121,21 +107,6 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
       /* .glass 表面样式统一由 theme.css 的表面令牌驱动。
          勿在页面级重复声明：html.dark .glass 的特异性 (0,2,1) 会
          盖掉令牌系统，导致 data-surface 主题在暗色下永远不生效 */
-      .nav-container {
-        position: fixed;
-        bottom: 1rem;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 50;
-      }
-      @media (min-width: 768px) {
-        .nav-container {
-          left: 1.5rem;
-          top: 50%;
-          bottom: auto;
-          transform: translateY(-50%);
-        }
-      }
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -147,56 +118,6 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
       }
     </style>
 
-    <!-- 开发模式优先清理旧 Service Worker，避免旧缓存先拦截 API 请求 -->
-    <script>
-      function resetMyriadDevServiceWorker() {
-        Promise.all([
-          navigator.serviceWorker.getRegistrations().then((registrations) =>
-            Promise.all(
-              registrations.map(async (registration) => {
-                try {
-                  await registration.update()
-                } catch {}
-                return registration.unregister()
-              }),
-            ),
-          ),
-          'caches' in window
-            ? caches
-                .keys()
-                .then((keys) =>
-                  Promise.all(keys.filter((key) => key.startsWith('myriad-')).map((key) => caches.delete(key))),
-                )
-            : Promise.resolve(),
-        ])
-          .then(() => {
-            if (navigator.serviceWorker.controller && !sessionStorage.getItem('myriad-dev-sw-reset')) {
-              sessionStorage.setItem('myriad-dev-sw-reset', '1')
-              window.location.reload()
-            }
-          })
-          .catch(() => {})
-      }
-
-      if ('serviceWorker' in navigator && import.meta.env.DEV) {
-        resetMyriadDevServiceWorker()
-      } else if ('serviceWorker' in navigator && import.meta.env.PROD) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {
-            // Service Worker registration failed
-          })
-        })
-      }
-    </script>
-
-    <!-- 动态加载网站元数据 - 使用新的元数据管理工具 -->
-    <script>
-      // 导入元数据管理工具（需要在构建时处理）
-      import { initSiteMetadata } from '../utils/siteMetadata'
-
-      // 立即初始化元数据（优先使用缓存，避免闪烁）
-      initSiteMetadata()
-    </script>
   </head>
   <body class="antialiased">
     <!-- 页面加载器 -->
@@ -279,73 +200,9 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
 
       /* 深色模式下的背景网格 */
 
-      /* 导航容器 - 移动端底部 / 桌面端左侧 */
-
-      /* 桌面端样式 */
-
-      /* Dynamic Island - 灵动岛样式 */
-
-      /* 导航岛内容容器 */
-
-      /* 主岛折叠状态 - 只显示返回按钮 */
-
-      /* 主岛内容容器 - 用于淡入淡出动画 */
-
-      /* 主岛折叠状态下淡出内容 */
-
       /* 关键帧动画定义 - 供 JS 使用 */
 
-      /* 桌面端样式 */
-
-      /* Secondary Island - 副岛样式（纵向排列） */
-
-      /* 副岛内容容器 - 用于淡入淡出动画 */
-
-      /* 副岛折叠状态 - 只显示一个图标 */
-
-      /* 副岛折叠状态下淡出内容 */
-
-      /* 深色模式下的副岛 */
-
-      /* 副岛导航项样式 */
-
-      /* 副岛激活状态 */
-
-      /* 深色模式下的灵动岛 */
-
-      /* 动态渐变边框动画 */
-
-      /* 导航组 - 移动端横向 / 桌面端纵向 */
-
-      /* 不同间距的导航组 - 移动端左右间距 / 桌面端上下间距 */
-
-      /* 分隔线样式 - 移动端竖线 / 桌面端横线 */
-
-      /* Navigation items */
-
-      /* 深色模式下的导航按钮 */
-
-      /* Active nav item indicator */
-
-      /* 深色模式下的选中状态 */
-
       /* 用户头像特殊样式 */
-
-      /* Generate button with gradient border - 简洁旋转版 */
-
-      /* 加载时变圆形 */
-
-      /* 边框容器 */
-
-      /* 渐变层 - 旋转 */
-
-      /* 彩虹边框旋转 */
-
-      /* 移动端导航岛优化 - 水平布局 */
-
-      /* 小屏幕进一步优化 */
-
-      /* 超小屏幕 */
 
       /* 触摸设备优化 */
 
@@ -358,47 +215,8 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
       /* Smooth scrolling + 彻底隐藏所有原生滚动条 */
 
       /* 动态颜色样式 - 替代内联样式 */
-      .progress-bar-fill {
-        background-color: var(--color-primary);
-        box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 50%, transparent);
-      }
-
-      /* 进度条宽度通过 JavaScript 动态设置 */
-      .progress-bar-fill[data-progress] {
-        width: calc(var(--progress, 0) * 1%);
-      }
-
-      .report-info-card {
-        border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
-      }
-
-      .platform-indicator {
-        background-color: var(--color-primary);
-      }
-
-      .tag-badge {
-        background-color: color-mix(in srgb, var(--color-primary) 70%, transparent);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-      }
-
-      .modal-card {
-        border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
-      }
-
       .icon-primary {
         color: var(--color-primary);
-      }
-
-      .ai-insight-box {
-        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
-        border-left: 4px solid var(--color-primary);
-        border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
-      }
-
-      .ai-insight-border {
-        border-color: transparent;
       }
 
       /* 弹窗动画 */
@@ -454,53 +272,6 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
 
       .animate-pulse-slow {
         animation: pulse-slow 2s ease-in-out infinite;
-      }
-
-      /* 平台链接样式 */
-      .platform-link {
-        background: linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--brand-color) 7%, transparent),
-          color-mix(in srgb, var(--brand-color) 4%, transparent)
-        );
-        border: 1.5px solid color-mix(in srgb, var(--brand-color) 20%, transparent);
-        color: var(--brand-color);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .platform-link::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        transition: left 0.5s ease;
-      }
-
-      .platform-link:hover::before {
-        left: 100%;
-      }
-
-      .platform-link:hover {
-        background: linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--brand-color) 13%, transparent),
-          color-mix(in srgb, var(--brand-color) 9%, transparent)
-        );
-        border-color: color-mix(in srgb, var(--brand-color) 35%, transparent);
-        transform: translateY(-1px);
-        box-shadow:
-          0 4px 12px color-mix(in srgb, var(--brand-color) 20%, transparent),
-          0 0 0 1px color-mix(in srgb, var(--brand-color) 9%, transparent);
-      }
-
-      .platform-link:active {
-        transform: translateY(0);
-        transition-duration: 0.1s;
       }
 
       /* 自定义滚动条 */
@@ -611,95 +382,6 @@ const myriadCommit = import.meta.env.PUBLIC_MYRIAD_COMMIT_SHA || ''
       }
 
       /* 渐变工具类 */
-
-      /* 萌宠走动动画 - 精灵图 */
-      .pet-walker {
-        transition:
-          left 0.05s linear,
-          transform 0.3s ease;
-        display: flex;
-        align-items: flex-end; /* 底部对齐 */
-      }
-
-      .pet-sprite {
-        background-image: var(--pet-image-url, url('https://api.fuukei.org/myriad/frontend/public/furina.png'));
-        background-size: 100% 100%; /* 填充整个容器 */
-        background-repeat: no-repeat;
-        background-position: center bottom; /* 底部对齐 */
-        image-rendering: pixelated;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: crisp-edges;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-        transition: transform 0.3s ease;
-        width: 100%;
-        height: 100%;
-      }
-
-      .pet-sprite:hover {
-        transform: scale(1.1);
-      }
-
-      .pixelated-image {
-        image-rendering: pixelated;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: crisp-edges;
-      }
-
-      .pet-walker.walking .pet-sprite {
-        animation: pet-walk-bounce 0.5s ease-in-out infinite;
-      }
-
-      @keyframes pet-walk-bounce {
-        0%,
-        100% {
-          transform: translateY(0) scaleY(1);
-        }
-        25% {
-          transform: translateY(-3px) scaleY(1.02) scaleX(0.98);
-        }
-        50% {
-          transform: translateY(0) scaleY(0.98) scaleX(1.02);
-        }
-        75% {
-          transform: translateY(-3px) scaleY(1.02) scaleX(0.98);
-        }
-      }
-
-      @keyframes pet-excited {
-        0% {
-          transform: translateY(0) rotate(0deg);
-        }
-        30% {
-          transform: translateY(-12px) rotate(-8deg) scale(1.1);
-        }
-        60% {
-          transform: translateY(-16px) rotate(8deg) scale(1.1);
-        }
-        100% {
-          transform: translateY(0) rotate(0deg);
-        }
-      }
-
-      .pet-walker.pet-excited {
-        animation: pet-excited 0.6s ease-out;
-      }
-
-      /* ========================================
-         Library Grid - Waterfall Layout Styles
-         ======================================== */
-
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* 移除旧的library样式，使用新的瀑布流布局 */
 
       /* ========================================
          Tailwind 颜色类全局覆盖 - 使用 CSS 变量

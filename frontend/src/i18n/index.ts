@@ -3901,6 +3901,79 @@ export interface TranslationKeys {
     sourceAro: string
     settingsDesc: string
   }
+
+  // 官网站点内容(静态官网版,content/site.ts 的文案真相源)
+  site: {
+    slogan: string
+    description: string
+    homeTitle: string
+    homeUserName: string
+    homeUserBio: string
+    intro: {
+      title: string
+      summary: string
+      p1: string
+      p2: string
+      l1: string
+      l2: string
+      l3: string
+      l4: string
+    }
+    features: {
+      title: string
+      summary: string
+      p1: string
+      l1: string
+      l2: string
+      l3: string
+      l4: string
+      l5: string
+      l6: string
+    }
+    preview: {
+      title: string
+      summary: string
+      p1: string
+      p2: string
+      l1: string
+      l2: string
+      l3: string
+      l4: string
+    }
+    download: {
+      title: string
+      summary: string
+      p1: string
+      l1: string
+      l2: string
+      l3: string
+      l4: string
+      linkRepo: string
+    }
+    techStack: {
+      title: string
+      summary: string
+      p1: string
+      l1: string
+      l2: string
+      l3: string
+      l4: string
+      l5: string
+      l6: string
+    }
+    about: {
+      title: string
+      summary: string
+      p1: string
+      p2: string
+      linkRepo: string
+    }
+    configGenerator: {
+      title: string
+      summary: string
+      p1: string
+    }
+  }
 }
 
 // 获取默认语言
@@ -3938,11 +4011,3 @@ export function saveLocale(locale: Locale): void {
     localStorage.setItem('locale', locale)
   }
 }
-
-// 通知设置文案目录（事件键为域枚举，独立于 TranslationKeys 扁平结构）
-export {
-  getNotificationCopy,
-  type NotificationCopy,
-  type NotificationSourceCopy,
-  type NotificationUiCopy,
-} from './notificationCatalog'

@@ -4260,4 +4260,82 @@ export const enUS: TranslationKeys = {
     settingsDesc:
       'Choose which sources and events notify you and how they are presented',
   },
+
+  // Official site content
+  site: {
+    slogan: 'A myriad of lights, in one place.',
+    description:
+      'Myriad is a self-hosted personal digital-life showcase that aggregates, organizes, and presents your data from multiple platforms.',
+    homeTitle: 'Myriad',
+    homeUserName: 'Myriad',
+    homeUserBio: 'A myriad of lights, in one place.',
+    intro: {
+      title: 'Introduction',
+      summary:
+        'A self-hosted personal digital-life showcase that brings your data together.',
+      p1: 'Myriad is a self-hosted showcase for your personal digital life. It aggregates, organizes, and presents your data scattered across platforms — music, games, reading, social activity — in one unified visual style.',
+      p2: 'All data runs on your own server and never passes through third parties. Your privacy is entirely in your hands.',
+      l1: 'Self-hosted data, fully under your control',
+      l2: 'Multi-platform data aggregation',
+      l3: 'Customizable dashboard layout',
+      l4: 'Light/dark themes + wallpaper-driven colors',
+    },
+    features: {
+      title: 'Key Features',
+      summary:
+        'Widget dashboard, theme engine, and motion system — all in one place.',
+      p1: 'Myriad is organized around widgets: each widget presents one kind of data, and you can freely combine and arrange them to build your own personal homepage.',
+      l1: 'Editable widget grid: drag-and-drop, WYSIWYG',
+      l2: 'Surface theme engine: glass / solid / flat / outline textures',
+      l3: 'Wallpaper color extraction with site-wide color sync',
+      l4: 'Tiered motion system that adapts to device performance',
+      l5: 'Light / dark / follow-system theme modes',
+      l6: 'Full mobile adaptation',
+    },
+    preview: {
+      title: 'Interface Preview',
+      summary:
+        'Glassmorphism with wallpaper-synced colors — what you see is what you get.',
+      p1: 'Myriad uses your wallpaper as the visual foundation: the site-wide primary color is extracted from it, and cards, navigation, and buttons follow suit — every wallpaper generates a unique theme.',
+      p2: 'Glassmorphism cards float above the wallpaper, paired with refined entrance animations that balance beauty and performance.',
+      l1: 'Wallpaper color extraction, site-wide color sync',
+      l2: 'Glassmorphism card design',
+      l3: 'Polished light and dark themes',
+      l4: 'Performance-adaptive motion tiers',
+    },
+    download: {
+      title: 'Download & Install',
+      summary: 'Self-hosted deployment — just a few commands to go live.',
+      p1: 'Myriad ships as an all-in-one deployment. Any server that runs Node.js (or a NAS, or a Raspberry Pi) is enough.',
+      l1: 'Clone the repo: git clone <repository-url>',
+      l2: 'Install dependencies: pnpm install',
+      l3: 'Build the frontend: pnpm build',
+      l4: 'Start the service: pnpm start',
+      linkRepo: 'GitHub Repository',
+    },
+    techStack: {
+      title: 'Tech Stack',
+      summary: 'Astro + React + Tailwind CSS — a modern frontend combination.',
+      p1: 'The Myriad frontend is built on a modern stack, balancing developer experience with runtime performance.',
+      l1: 'Astro 7 — static site shell and build',
+      l2: 'React 19 — interactive UI',
+      l3: 'Tailwind CSS 4 — utility-first styling',
+      l4: 'TypeScript — end-to-end type safety',
+      l5: 'Motion — declarative animations',
+      l6: 'pnpm + Vite — blazing-fast tooling',
+    },
+    about: {
+      title: 'About Us',
+      summary:
+        'A small team passionate about digital life and open-source culture.',
+      p1: 'Myriad is maintained by developers who love digital life and open-source culture. We believe personal data belongs in the hands of its owners — and that beautiful interfaces and practical features can go hand in hand.',
+      p2: 'The project is open source. Issues and PRs are welcome — or just drop by to share your thoughts.',
+      linkRepo: 'GitHub Repository',
+    },
+    configGenerator: {
+      title: 'Config Generator',
+      summary: 'Generate your install config online — deploy in a few steps.',
+      p1: 'Use the online config generator: follow the wizard to pick the modules and data sources you need, and an install config is generated automatically.',
+    },
+  },
 }

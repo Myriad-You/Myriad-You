@@ -1,18 +1,11 @@
 /**
- * 请求去重工具
+ * 请求去重工具(静态官网版)
  *
- * 解决多个组件同时请求相同 API 导致的重复网络请求问题。
+ * 解决多个组件同时请求相同外部 API(天气/地理位置)导致的重复网络请求问题。
  * 使用 Promise 共享机制，确保相同的请求在短时间内只发起一次。
  */
 
 // 进行中的请求缓存
-// ============================================
-// 预定义的常用 API 去重函数
-// ============================================
-
-import { API_URL } from '../config'
-import { normalizeJsonMediaUrls } from './proxyImageUrl'
-
 const pendingRequests = new Map<string, Promise<any>>()
 
 // 已完成请求的结果缓存
@@ -188,114 +181,4 @@ export function prefetchDedup<T>(
   } else {
     setTimeout(prefetch, 1000)
   }
-}
-
-/**
- * 获取 UI 配置（去重）
- * 缓存 30 秒
- */
-export async function getUIConfigDeduped(): Promise<any> {
-  return dedupedFetch(
-    `${API_URL}/api/config/ui`,
-    async () => {
-      const response = await fetch(`${API_URL}/api/config/ui`)
-      if (!response.ok) throw new Error('Failed to fetch UI config')
-      return response.json()
-    },
-    { cacheTTL: 30 * 1000 },
-  )
-}
-
-/**
- * 获取最新报告（去重）
- * 有有效 platform_reports 时缓存 30 秒；空结果不缓存，避免首页在生成报告后
- * 仍读到「无报告」缓存导致 ReportCard 空白。
- */
-export async function getLatestReportDeduped(
-  options: { forceRefresh?: boolean } = {},
-): Promise<any> {
-  const cacheKey = `${API_URL}/api/reports/latest`
-  const data = await dedupedFetch(
-    cacheKey,
-    async () => {
-      const response = await fetch(`${API_URL}/api/reports/latest`, {
-        credentials: 'include',
-      })
-      if (!response.ok) throw new Error('Failed to fetch latest report')
-      return response.json()
-    },
-    { cacheTTL: 30 * 1000, forceRefresh: options.forceRefresh },
-  )
-
-  // Drop empty / failed payloads from the result cache so the next home widget
-  // mount re-fetches after the owner generates reports.
-  const reports = data?.platform_reports
-  const empty =
-    !data ||
-    data.success === false ||
-    !Array.isArray(reports) ||
-    reports.length === 0
-  if (empty) {
-    clearDedupCache(cacheKey)
-  }
-  return data
-}
-
-/** Invalidate cached latest-report payload (call after generate). */
-export function invalidateLatestReportCache(): void {
-  clearDedupCache(`${API_URL}/api/reports/latest`)
-}
-
-/**
- * 获取公开平台配置（去重）
- * 首页多个小组件（社交网络、报告卡片）都需要同一份数据
- * 缓存 30 秒
- */
-export async function getPublicConfigDeduped(): Promise<any> {
-  return dedupedFetch(
-    `${API_URL}/api/config/public`,
-    async () => {
-      const response = await fetch(`${API_URL}/api/config/public`)
-      if (!response.ok) throw new Error('Failed to fetch public config')
-      return response.json()
-    },
-    { cacheTTL: 30 * 1000 },
-  )
-}
-
-/**
- * 获取设置状态（去重）
- * 缓存 1 分钟
- */
-export async function getSetupStatusDeduped(): Promise<any> {
-  return dedupedFetch(
-    `${API_URL}/api/setup/status`,
-    async () => {
-      const response = await fetch(`${API_URL}/api/setup/status`)
-      if (!response.ok) throw new Error('Failed to fetch setup status')
-      return response.json()
-    },
-    { cacheTTL: 60 * 1000 },
-  )
-}
-
-/**
- * 获取库数据（去重）
- * 缓存 2 分钟（数据量大，减少请求）
- * 入口统一 normalizeJsonMediaUrls，封面与报告卡同一套防盗链规则。
- */
-export async function getLibraryDataDeduped(): Promise<any> {
-  return dedupedFetch(
-    `${API_URL}/api/library`,
-    async () => {
-      const response = await fetch(`${API_URL}/api/library`, {
-        credentials: 'include',
-        signal: AbortSignal.timeout(30000), // 30秒超时（数据量大）
-      })
-      if (!response.ok) throw new Error('Failed to fetch library data')
-      const data = await response.json()
-      return normalizeJsonMediaUrls(data)
-    },
-    { cacheTTL: 2 * 60 * 1000 }, // 2分钟
-  )
 }

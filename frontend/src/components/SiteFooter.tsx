@@ -6,24 +6,26 @@
  * 折叠逻辑：非首页或移动端 → compact（仅图标 + tooltip）
  */
 
+import type { FooterCustomItem } from '../utils/footerCustomLogic'
+
 import { SiCloudflare } from '@lib/icons'
 
-import React, { memo, useCallback, useEffect, useState } from 'react'
-
+import React, { memo, useEffect, useState } from 'react'
+import { footerConfig } from '../content/site'
 import { getBuildInfo } from '../utils/buildInfo'
 import {
+
   isFooterCustomHref,
   parseFooterCustom,
-  type FooterCustomItem,
 } from '../utils/footerCustomLogic'
-import { getUIConfigDeduped } from '../utils/requestDedup'
 import './SiteFooter.css'
 
-interface SiteConfig {
-  site_icp?: string
-  site_gongan?: string
-  cloud_sponsors?: string
-  site_footer_custom?: string
+/** 静态站点配置(来自 content/site.ts,无后端请求) */
+const STATIC_CONFIG = {
+  site_icp: footerConfig.icp || undefined,
+  site_gongan: footerConfig.gongan || undefined,
+  cloud_sponsors: undefined as string | undefined,
+  site_footer_custom: undefined as string | undefined,
 }
 
 // 又拍云 Logo（官方 logo 主体，移除文字）
@@ -125,7 +127,7 @@ interface SiteFooterProps {
 
 export const SiteFooter: React.FC<SiteFooterProps> = memo(
   ({ isHomePage = false }) => {
-    const [config, setConfig] = useState<SiteConfig | null>(null)
+    const config = STATIC_CONFIG
     const [isMobile, setIsMobile] = useState(false)
     const buildInfo = getBuildInfo()
 
@@ -144,26 +146,6 @@ export const SiteFooter: React.FC<SiteFooterProps> = memo(
         clearTimeout(timerId)
       }
     }, [])
-
-    const loadConfig = useCallback(async () => {
-      try {
-        const data = await getUIConfigDeduped()
-        setConfig(data as SiteConfig)
-      } catch {
-        /* silent */
-      }
-    }, [])
-
-    useEffect(() => {
-      void loadConfig()
-      const onFooterChanged = () => {
-        void loadConfig()
-      }
-      window.addEventListener('footerConfigChanged', onFooterChanged)
-      return () => {
-        window.removeEventListener('footerConfigChanged', onFooterChanged)
-      }
-    }, [loadConfig])
 
     // 解析云基础设施展示（config: cloud_sponsors）
     const providers = config?.cloud_sponsors
