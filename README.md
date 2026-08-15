@@ -7,6 +7,7 @@ Myriad 的官方静态网站 —— 单页、纯静态、零后端依赖。
 - 无路由、无登录、无 API 请求;其他页面(Library / Brew / Reports / Config / Tapp 等)已全部移除。
 - 壁纸、站点文案、板块内容均为本地静态配置，唯一内容真相源是 `frontend/src/content/site.ts`。
 - 网格中的官网板块卡(核心特性 / 界面预览 / 下载安装 / 技术栈 / 关于)与 welcome 小组件的引导卡，点击均弹出详情弹窗。
+- 「安装配置生成」板块卡打开站内移植的配置生成器(生成 Compose / .env / Nginx / 部署说明),源码在 `frontend/src/config-generator/`,移植自 [tapp-store 的 com.myriad.config-generator](https://github.com/abloom25/tapp-store/tree/main/apps/com.myriad.config-generator),仅移除沙箱宿主 API,生成逻辑原样保留。注意：Docker Hub 不接受浏览器跨域请求，「自动获取最新 tag」在纯静态托管下不可用，需手动填写 tag(其余功能不受影响)。
 - 天气(open-meteo)与一言(hitokoto)小组件直连公共 API,无需任何服务端。
 
 ## 本地运行

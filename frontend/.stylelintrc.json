@@ -1,6 +1,11 @@
 {
   "extends": ["stylelint-config-standard"],
-  "ignoreFiles": ["**/dist/**", "**/node_modules/**", "**/.astro/**"],
+  "ignoreFiles": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.astro/**",
+    "**/src/config-generator/**"
+  ],
   "rules": {
     "at-rule-no-unknown": [
       true,

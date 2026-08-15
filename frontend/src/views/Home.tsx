@@ -11,6 +11,7 @@ import type { SiteSection } from '../content/site'
 import { motionShim as motion } from '@lib/motionShim'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AnimatedView from '../components/AnimatedView'
+import ConfigGeneratorModal from '../components/ConfigGeneratorModal'
 import DetailModal from '../components/DetailModal'
 import WidgetGrid from '../components/WidgetGrid'
 import {
@@ -76,6 +77,7 @@ export default function Home() {
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
   const [openSection, setOpenSection] = useState<SiteSection | null>(null)
+  const [generatorOpen, setGeneratorOpen] = useState(false)
 
   // 标题字体 Hook
   const { currentFont, titleFontSize } = useTitleFont()
@@ -112,8 +114,12 @@ export default function Home() {
     void applyWidgets(buildStaticLayout())
   }, [])
 
-  // 板块入口统一处理:带 href 的外链卡新标签页打开,其余弹详情窗
+  // 板块入口统一处理:配置生成器弹站内生成器弹窗,带 href 的外链卡新标签页打开,其余弹详情窗
   const openSectionOrLink = useCallback((section: SiteSection) => {
+    if (section.id === 'config-generator') {
+      setGeneratorOpen(true)
+      return
+    }
     if (section.href) {
       window.open(section.href, '_blank', 'noopener,noreferrer')
       return
@@ -215,6 +221,12 @@ export default function Home() {
           </WidgetGrid>
         </div>
       </div>
+
+      {/* 安装配置生成器弹窗(移植的 tapp 生成器,挂载于弹窗内) */}
+      <ConfigGeneratorModal
+        open={generatorOpen}
+        onClose={() => setGeneratorOpen(false)}
+      />
 
       {/* 板块详情弹窗 */}
       <DetailModal

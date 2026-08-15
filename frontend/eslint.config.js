@@ -4,6 +4,8 @@ import antfu from '@antfu/eslint-config'
 export default antfu(
   {
     formatters: false,
+    // 移植的 tapp 生成器为原样保留的 vanilla JS,不参与本站 lint 风格约束
+    ignores: ['src/config-generator/**', 'scripts/config-generator-smoke.mjs'],
   },
   {
     rules: {

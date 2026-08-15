@@ -205,7 +205,7 @@ export function getSections(t: TranslationKeys): readonly SiteSection[] {
       detail: {
         paragraphs: [s.configGenerator.p1],
       },
-      href: 'https://kiseki.blog/tapp/run/com.myriad.config-generator',
+      // 无 href:点击由 Home 特殊处理,弹站内 ConfigGeneratorModal(移植的生成器)
     },
   ]
 }
