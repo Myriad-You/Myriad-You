@@ -35,14 +35,48 @@ const STYLE_ELEMENT_ID = 'config-generator-styles'
 
 /**
  * 弹窗挂载修正(追加在 page.css 之后,原文件保持原样):
- * #tapp-content 在 tapp 里是填满视口的绝对定位滚动层;
- * 弹窗内改为文档流撑开高度,滚动交由 .modal-content 承担。
+ * tapp 里 #tapp-content 是绝对定位填满视口的滚动壳,卡/pane/body 的高度链
+ * 全部挂在视口上;弹窗内没有这层视口,改为从 .modal-content(max-height: 85vh)
+ * 一路 flex 传递确定高度,恢复 tapp 原布局:顶栏/底栏钉住,
+ * .cg-ob-body 承担内部滚动(否则 body 近似等高 + overscroll-behavior: contain
+ * 会把滚轮事件吃掉,表现为「高级选项无法滚动」)。
  */
 const MOUNT_OVERRIDE_CSS = `
-.config-generator-mount #tapp-content {
+.config-generator-dialog {
+  display: flex;
+  flex-direction: column;
+}
+.config-generator-dialog .config-generator-mount {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.config-generator-dialog #tapp-content {
   position: relative;
   inset: auto;
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+/* 百分比高度跨不过 flex 链(每级 flex-basis 都是 auto),逐级改 flex 传递确定高度 */
+.config-generator-dialog .cg-ob {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+.config-generator-dialog .cg-ob__card {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+/* grid 隐式行按 max-content 撑高会顶破容器,钉在容器高度内,pane 内部再滚 */
+.config-generator-dialog .cg-ob__viewport {
+  grid-template-rows: minmax(0, 1fr);
 }
 `
 
@@ -98,23 +132,38 @@ const mobileVariants = {
 }
 
 export function ConfigGeneratorModal({ open, onClose }: ConfigGeneratorModalProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const hostRef = useRef<HTMLDivElement>(null)
   const primaryColor = usePrimaryColor()
+  // open 的 ref 镜像:区分「关闭中(等退出动画)」与「打开中切语言(立即重挂)」
+  const openRef = useRef(open)
+  openRef.current = open
 
-  // 打开时注入样式 + markup 并启动生成器;关闭时卸载并清空
+  /** 卸载生成器并清空 markup */
+  const teardownHost = () => {
+    unmountConfigGenerator()
+    if (hostRef.current) hostRef.current.innerHTML = ''
+  }
+
+  // 打开时注入样式 + markup 并启动生成器;语言切换时按新 locale 重挂。
+  // 关闭时不能在 effect 清理里立刻清空:退出动画还在播放,抽空内容会让弹窗塌成一条线,
+  // 交由 AnimatePresence 的 onExitComplete 在动画结束后 teardown。
   useEffect(() => {
     if (!open) return
     ensureGeneratorStyles()
     const host = hostRef.current
     if (!host) return
     host.innerHTML = pageHtml
-    mountConfigGenerator()
+    mountConfigGenerator(locale)
     return () => {
-      unmountConfigGenerator()
-      host.innerHTML = ''
+      if (openRef.current) teardownHost()
     }
-  }, [open])
+  }, [open, locale])
+
+  /** 退出动画播完且仍处于关闭态时才清空(快速重开时不动新挂载的内容) */
+  const handleExitComplete = () => {
+    if (!openRef.current) teardownHost()
+  }
 
   // ESC 关闭 + 锁定背景滚动
   useEffect(() => {
@@ -147,7 +196,7 @@ export function ConfigGeneratorModal({ open, onClose }: ConfigGeneratorModalProp
   } as React.CSSProperties
 
   return createPortal(
-    <AnimatePresence mode="sync">
+    <AnimatePresence mode="sync" onExitComplete={handleExitComplete}>
       {open && (
         <motion.div
           key="config-generator-overlay"
@@ -162,7 +211,7 @@ export function ConfigGeneratorModal({ open, onClose }: ConfigGeneratorModalProp
         >
           <motion.div
             key="config-generator-content"
-            className="modal-content modal-motion"
+            className="modal-content modal-motion config-generator-dialog"
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
