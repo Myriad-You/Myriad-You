@@ -10,17 +10,45 @@
  * 已移除:音乐播放器、通知中心、用户/登录区、壁纸切换、系统配置入口。
  */
 
+import type { CSSProperties } from 'react'
 import type { QuoteData } from '../utils/quote'
 import type { WeatherData } from '../utils/weather'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
 import { siteName } from '../content/site'
 import { useI18n } from '../contexts/I18nContext'
 import { useAnimationLevel } from '../hooks/useAnimationLevel'
+import { usePerformanceProfile } from '../hooks/usePerformanceProfile'
 import { getGreeting, getRandomQuote } from '../utils/dynamicContent'
 import { useThemeMode } from '../utils/themeSubscriber'
 import { getWeatherInfo, WEATHER_ICON_ASSETS } from '../utils/weather'
+import {
+  initialPanelState,
+  isPanelMorphing,
+  isPanelOpen,
+  panelReducer,
+  resolvePanelMotion,
+  settleTimeoutMs,
+  showsDynamicContent,
+  showsOverlay,
+  showsOverlayBlur,
+  showsPanelContent,
+} from './ControlPanel/panelTransition'
 import { WeatherAssetIcon } from './weather/WeatherAssetIcon'
 import './GlobalControlPanel.css'
+
+/** 与 CSS `@media (hover: hover)` 同一套：只认鼠标，避免触屏粘滞 hover。 */
+function isHoverCapablePointer(pointerType: string): boolean {
+  return pointerType === 'mouse'
+}
 
 // ============================================================================
 // 图标资源(public/ 静态资源)
@@ -105,18 +133,46 @@ const GlobalControlPanel: React.FC = () => {
   const { locale, setLocale, t } = useI18n()
   const isDark = useThemeMode()
   const anim = useAnimationLevel()
+  const perf = usePerformanceProfile()
 
-  // ─── 展开/收起状态 ───
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [showPanelContent, setShowPanelContent] = useState(false)
-  const [showDynamicContent, setShowDynamicContent] = useState(true)
-  const [showOverlay, setShowOverlay] = useState(false)
+  const [panel, dispatchPanel] = useReducer(panelReducer, initialPanelState)
   const [isHovering, setIsHovering] = useState(false)
   const isExpandedRef = useRef(false)
-  const panelAnimGenRef = useRef(0)
-
+  const morphingRef = useRef(false)
   const triggerRef = useRef<HTMLDivElement>(null)
   const expandedContentRef = useRef<HTMLDivElement>(null)
+
+  const motion = useMemo(
+    () =>
+      resolvePanelMotion({
+        level: anim.level,
+        reduceMotion: perf.reduceMotion,
+        isMobile: perf.isMobile,
+      }),
+    [anim.level, perf.reduceMotion, perf.isMobile],
+  )
+  const [activeMotion, setActiveMotion] = useState(motion)
+  useEffect(() => {
+    if (!isPanelMorphing(panel)) setActiveMotion(motion)
+  }, [motion, panel.phase])
+  const motionRef = useRef(activeMotion)
+  useLayoutEffect(() => {
+    motionRef.current = activeMotion
+  }, [activeMotion])
+  const motionVars = useMemo(
+    () => ({ '--gcp-morph': `${activeMotion.morphMs}ms` }) as CSSProperties,
+    [activeMotion],
+  )
+
+  const isExpanded = isPanelOpen(panel)
+  const showPanelContent = showsPanelContent(panel)
+  const showDynamicContent = showsDynamicContent(panel)
+  const showOverlay = showsOverlay(panel)
+
+  useLayoutEffect(() => {
+    isExpandedRef.current = isExpanded
+    morphingRef.current = isPanelMorphing(panel)
+  }, [isExpanded, panel.phase])
 
   // ─── 动态轮播内容 ───
   const [dynamicContents, setDynamicContents] = useState<DynamicContent[]>([])
@@ -320,62 +376,59 @@ const GlobalControlPanel: React.FC = () => {
     }
   }, [validContents.length, isExpanded, isHovering, anim.durationScale])
 
-  // ─── 展开/收起(保留原时序:0.7s 容器 morph,400ms 中点切换内容) ───
-  const collapsePanel = useCallback(() => {
-    const gen = ++panelAnimGenRef.current
-    window.dispatchEvent(new CustomEvent('gcp-animation-start'))
-    isExpandedRef.current = false
+  // 相位推进：由外壳真实的过渡结束事件驱动，定时器只作兜底。
+  // 收缩内容淡出 → 外壳 morph → 展开内容淡入 → 遮罩，共用同一条时间线。
+  useEffect(() => {
+    if (!isPanelMorphing(panel)) return
+    const el = triggerRef.current
+    const generation = panel.generation
+    const active = motionRef.current
 
-    setShowPanelContent(false)
-    setShowOverlay(false)
-    setIsExpanded(false)
-    setTimeout(() => {
-      if (gen !== panelAnimGenRef.current) return
-      setShowDynamicContent(true)
-    }, 400)
-    setTimeout(() => {
-      if (gen !== panelAnimGenRef.current) return
+    window.dispatchEvent(new CustomEvent('gcp-animation-start'))
+
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
       window.dispatchEvent(new CustomEvent('gcp-animation-end'))
-    }, 700)
-  }, [])
+      dispatchPanel({ type: 'settle', generation })
+    }
+
+    const handleTransitionEnd = (e: TransitionEvent) => {
+      if (e.target === el && e.propertyName === 'width') finish()
+    }
+    if (active.spatial && el) {
+      el.addEventListener('transitionend', handleTransitionEnd)
+    }
+    const fallback = window.setTimeout(finish, settleTimeoutMs(active))
+
+    return () => {
+      window.clearTimeout(fallback)
+      el?.removeEventListener('transitionend', handleTransitionEnd)
+      if (!settled) {
+        window.dispatchEvent(new CustomEvent('gcp-animation-end'))
+      }
+    }
+  }, [panel.phase, panel.generation])
 
   const expandPanel = useCallback(() => {
-    const gen = ++panelAnimGenRef.current
-    window.dispatchEvent(new CustomEvent('gcp-animation-start'))
     isExpandedRef.current = true
-
-    setShowDynamicContent(false)
-    setIsExpanded(true)
-    setTimeout(() => {
-      if (gen !== panelAnimGenRef.current) return
-      setShowOverlay(true)
-    }, 0)
-    setTimeout(() => {
-      if (gen !== panelAnimGenRef.current) return
-      setShowPanelContent(true)
-      // 面板内容淡入后重测高度(内容显隐切换会改变 scrollHeight)
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new CustomEvent('gcp-remeasure'))
-      })
-    }, 400)
-    setTimeout(() => {
-      if (gen !== panelAnimGenRef.current) return
-      window.dispatchEvent(new CustomEvent('gcp-animation-end'))
-    }, 700)
+    dispatchPanel({ type: 'open' })
   }, [])
 
   const handleClosePanel = useCallback(() => {
     if (!isExpandedRef.current) return
-    collapsePanel()
-  }, [collapsePanel])
+    isExpandedRef.current = false
+    dispatchPanel({ type: 'close' })
+  }, [])
 
   const handleTogglePanel = useCallback(() => {
-    if (isExpanded) {
+    if (isExpandedRef.current) {
       handleClosePanel()
     } else {
       expandPanel()
     }
-  }, [isExpanded, handleClosePanel, expandPanel])
+  }, [handleClosePanel, expandPanel])
 
   // 展开态写入 html.gcp-panel-open(CSS 用它处理层级/指针事件)
   useEffect(() => {
@@ -398,7 +451,9 @@ const GlobalControlPanel: React.FC = () => {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [isExpanded, handleClosePanel])
 
-  // ─── 展开高度测量(内容宽度由 CSS 固定为终值,直接读 scrollHeight) ───
+  // ─── 展开高度测量 ───
+  // 内容宽度由 CSS 固定为终值。morph 期间只写一次目标高度，避免异步内容
+  // 在过渡中途顶跳外壳；结束后 ResizeObserver 再跟进。
   useLayoutEffect(() => {
     const triggerEl = triggerRef.current
     if (!triggerEl) return
@@ -410,22 +465,25 @@ const GlobalControlPanel: React.FC = () => {
     const contentEl = expandedContentRef.current
     if (!contentEl) return
 
-    const measure = () => {
-      // 放开内联高度后量取容器自身 scrollHeight(含 padding),
-      // 比「内容 scrollHeight × 补偿系数」更稳:内容变少时比例补偿
-      // 覆盖不了固定的 header + padding 开销,会把面板底部裁掉
-      triggerEl.style.height = 'auto'
-      const needed = Math.ceil(triggerEl.scrollHeight)
+    let didInitial = false
+    const measure = (opts?: { force?: boolean }) => {
+      if (morphingRef.current && didInitial && !opts?.force) return
+      const styles = getComputedStyle(triggerEl)
+      const pad =
+        Number.parseFloat(styles.paddingTop) +
+        Number.parseFloat(styles.paddingBottom)
+      const needed = Math.ceil(contentEl.scrollHeight + pad)
       triggerEl.style.height = `${needed}px`
+      didInitial = true
     }
     measure()
 
-    // 内容晚加载(图标/字体)会撑高内容,动画结束时的单次重测可能仍然偏早,
-    // 用 ResizeObserver 跟随内容尺寸,避免面板底部裁剪
     const resizeObserver = new ResizeObserver(() => measure())
     resizeObserver.observe(contentEl)
 
-    const handleAnimationEnd = () => measure()
+    const handleAnimationEnd = () => {
+      measure({ force: true })
+    }
     const handleRemeasure = () => measure()
     window.addEventListener('gcp-animation-end', handleAnimationEnd)
     window.addEventListener('gcp-remeasure', handleRemeasure)
@@ -435,21 +493,6 @@ const GlobalControlPanel: React.FC = () => {
       window.removeEventListener('gcp-remeasure', handleRemeasure)
     }
   }, [isExpanded, locale])
-
-  // gcp-animating 类:动画期间冻结移动端 backdrop(CSS 契约)
-  useEffect(() => {
-    const el = triggerRef.current
-    if (!el) return
-    const handleStart = () => el.classList.add('gcp-animating')
-    const handleEnd = () => el.classList.remove('gcp-animating')
-    window.addEventListener('gcp-animation-start', handleStart)
-    window.addEventListener('gcp-animation-end', handleEnd)
-    return () => {
-      window.removeEventListener('gcp-animation-start', handleStart)
-      window.removeEventListener('gcp-animation-end', handleEnd)
-      el.classList.remove('gcp-animating')
-    }
-  }, [])
 
   // ─── 渲染 ───
   const currentContent =
@@ -480,9 +523,21 @@ const GlobalControlPanel: React.FC = () => {
         <div className="control-bar-content">
           <div
             ref={triggerRef}
-            className={`control-bar-trigger ${isExpanded ? 'expanded' : ''}`}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
+            className={[
+              'control-bar-trigger',
+              isExpanded ? 'expanded' : '',
+              isPanelMorphing(panel) ? 'gcp-animating' : '',
+              panel.phase === 'closing' ? 'gcp-closing' : '',
+              activeMotion.spatial ? '' : 'gcp-no-morph',
+              activeMotion.blurDuringMorph ? '' : 'gcp-freeze-blur',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={motionVars}
+            onPointerEnter={(e) => {
+              if (isHoverCapablePointer(e.pointerType)) setIsHovering(true)
+            }}
+            onPointerLeave={() => setIsHovering(false)}
           >
             {/* 动态轮播内容 - 仅在有有效内容时显示 */}
             {currentContent && (
@@ -507,8 +562,9 @@ const GlobalControlPanel: React.FC = () => {
               </div>
             )}
 
-            {/* 无有效内容时,仍需保持可点击区域以展开面板 */}
-            {!currentContent && !isExpanded && (
+            {/* 无有效内容时仍保持可点击区域。不按 isExpanded 卸载：
+                交给 showDynamicContent 走与外壳同一条时间线的淡出/淡入 */}
+            {!currentContent && (
               <div
                 className={`dynamic-content-wrapper empty-state ${!showDynamicContent ? 'hidden' : ''}`}
                 onClick={handleTogglePanel}
@@ -657,9 +713,16 @@ const GlobalControlPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* 遮罩层 - 始终存在,通过 CSS 控制显示 */}
       <div
-        className={`control-panel-overlay ${showOverlay ? 'visible' : ''}`}
+        className={[
+          'control-panel-overlay',
+          showOverlay ? 'visible' : '',
+          activeMotion.blurDuringMorph ? '' : 'defer-blur',
+          showsOverlayBlur(panel, activeMotion) ? 'blurred' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        style={motionVars}
         onClick={handleClosePanel}
       />
     </>
