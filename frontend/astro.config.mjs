@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@astrojs/react'
@@ -6,12 +5,6 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig, fontProviders } from 'astro/config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// 读取 package.json 版本号
-const pkg = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
-)
-const APP_VERSION = pkg.version || '0.3.21'
 
 /** 天气小组件需要文档级 geolocation 权限 */
 const DOCUMENT_PERMISSIONS_POLICY =
@@ -154,9 +147,6 @@ export default defineConfig({
   ],
   trailingSlash: 'never',
   vite: {
-    define: {
-      __APP_VERSION__: JSON.stringify(APP_VERSION),
-    },
     plugins: [
       tailwindcss(), // Tailwind CSS v4 Vite plugin
       permissionsPolicyPlugin(),

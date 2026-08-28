@@ -4080,6 +4080,7 @@ export const zhCN: TranslationKeys = {
     homeTitle: 'Myriad',
     homeUserName: 'Myriad',
     homeUserBio: 'A myriad of lights, in one place.',
+    copyright: '© {year} Myriad',
     intro: {
       title: '产品介绍',
       summary: '自托管的个人数字生活展示入口,把你的数据聚合一处。',

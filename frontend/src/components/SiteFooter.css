@@ -43,31 +43,11 @@ html.dark .site-footer-content:hover {
   color: rgb(156 163 175 / 90%);
 }
 
-/* 版本号 */
-.footer-version {
-  display: flex;
-  align-items: center;
-  gap: 0.125rem;
-}
-
-.version-label {
+/* 版权 */
+.footer-copyright {
   font-weight: 500;
   letter-spacing: 0.01em;
-}
-
-.version-number {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.55rem;
-  opacity: 0.7;
-}
-
-.version-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.version-link:hover {
-  text-decoration: underline;
+  white-space: nowrap;
 }
 
 /* 分隔符 */

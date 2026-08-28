@@ -4268,6 +4268,7 @@ export const jaJP: TranslationKeys = {
     homeTitle: 'Myriad',
     homeUserName: 'Myriad',
     homeUserBio: 'A myriad of lights, in one place.',
+    copyright: '© {year} Myriad',
     intro: {
       title: '製品紹介',
       summary: 'セルフホスト型の個人デジタルライフ・ショーケース。あなたのデータを一か所に。',

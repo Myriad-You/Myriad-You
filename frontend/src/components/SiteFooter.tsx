@@ -1,9 +1,9 @@
 /**
  * 站点底部信息组件
- * 显示版本号、备案号、云基础设施 Logo、自定义图标+文本
+ * 显示版权、备案号、云基础设施 Logo、自定义图标+文本
  *
  * 注意：DOM class 避免使用 sponsor/ad 等易被广告拦截规则误杀的词。
- * 折叠逻辑：非首页或移动端 → compact（仅图标 + tooltip）
+ * 折叠逻辑：非首页或移动端 → compact（版权 + 图标 tooltip）
  */
 
 import type { FooterCustomItem } from '../utils/footerCustomLogic'
@@ -12,7 +12,7 @@ import { SiCloudflare } from '@lib/icons'
 
 import React, { memo, useEffect, useState } from 'react'
 import { footerConfig } from '../content/site'
-import { getBuildInfo } from '../utils/buildInfo'
+import { useI18n } from '../contexts/I18nContext'
 import {
 
   isFooterCustomHref,
@@ -129,7 +129,10 @@ export const SiteFooter: React.FC<SiteFooterProps> = memo(
   ({ isHomePage = false }) => {
     const config = STATIC_CONFIG
     const [isMobile, setIsMobile] = useState(false)
-    const buildInfo = getBuildInfo()
+    const { t, format } = useI18n()
+    const copyright = format(t.site.copyright, {
+      year: new Date().getFullYear(),
+    })
 
     // 检测移动端（带防抖，避免拖拽窗口时频繁 setState）
     useEffect(() => {
@@ -159,8 +162,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = memo(
       config?.site_footer_custom,
     )
 
-    // 如果没有任何内容要显示，不渲染（完整模式仍有版本号）
-    const hasContent =
+    const hasExtra =
       config?.site_icp ||
       config?.site_gongan ||
       providers.length > 0 ||
@@ -223,18 +225,15 @@ export const SiteFooter: React.FC<SiteFooterProps> = memo(
         )
       })
 
-    // 简化模式（非首页或移动端）：只显示图标
+    // 简化模式（非首页或移动端）：版权 + 图标
     if (useCompactMode) {
-      const hasAnyIcon =
-        config?.site_icp ||
-        config?.site_gongan ||
-        providers.length > 0 ||
-        customItems.length > 0
-      if (!hasAnyIcon) return null
-
       return (
         <footer className="site-footer site-footer-compact">
           <div className="site-footer-content">
+            <span className="footer-copyright">{copyright}</span>
+
+            {hasExtra && <span className="footer-divider">·</span>}
+
             {/* 备案信息图标 */}
             {config?.site_icp && (
               <Tooltip content={config.site_icp}>
@@ -289,26 +288,9 @@ export const SiteFooter: React.FC<SiteFooterProps> = memo(
     return (
       <footer className="site-footer">
         <div className="site-footer-content">
-          {/* 版本号 */}
-          <div className="footer-version">
-            <span className="version-label">Myriad</span>
-            {buildInfo.commitUrl ? (
-              <a
-                className="version-number version-link"
-                href={buildInfo.commitUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                title={buildInfo.commitSha ?? undefined}
-              >
-                {buildInfo.version} · {buildInfo.commitSha?.slice(0, 7)}
-              </a>
-            ) : (
-              <span className="version-number">{buildInfo.version}</span>
-            )}
-          </div>
+          <span className="footer-copyright">{copyright}</span>
 
-          {/* 分隔符 */}
-          {hasContent && <span className="footer-divider">·</span>}
+          {hasExtra && <span className="footer-divider">·</span>}
 
           {/* 备案信息 */}
           {config?.site_icp && (

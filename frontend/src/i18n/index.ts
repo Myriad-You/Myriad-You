@@ -3909,6 +3909,7 @@ export interface TranslationKeys {
     homeTitle: string
     homeUserName: string
     homeUserBio: string
+    copyright: string
     intro: {
       title: string
       summary: string

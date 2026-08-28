@@ -77,7 +77,7 @@ export function getHomeConfig(t: TranslationKeys) {
     userName: t.site.homeUserName,
     userBio: t.site.homeUserBio,
     /** 头像(public/ 下的静态资源) */
-    avatar: '/avatar.svg',
+    avatar: '/avatar.webp',
   } as const
 }
 

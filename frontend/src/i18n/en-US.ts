@@ -4269,6 +4269,7 @@ export const enUS: TranslationKeys = {
     homeTitle: 'Myriad',
     homeUserName: 'Myriad',
     homeUserBio: 'A myriad of lights, in one place.',
+    copyright: '© {year} Myriad',
     intro: {
       title: 'Introduction',
       summary:
