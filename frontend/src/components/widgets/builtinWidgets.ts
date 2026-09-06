@@ -33,6 +33,10 @@ const WelcomeWidget = lazyWidget(
   () => import('./WelcomeWidget'),
   'WelcomeWidget',
 )
+const CountdownWidget = lazyWidget(
+  () => import('./CountdownWidget'),
+  'CountdownWidget',
+)
 const SiteCardWidget = lazyWidget(
   () => import('./SiteCardWidget'),
   'SiteCardWidget',
@@ -52,6 +56,11 @@ export const BUILTIN_WIDGET_BASE_CONFIG = {
     component: WeatherWidget,
     supportedSizes: ['2x2', '4x2', '4x1'] as WidgetSize[],
   },
+  countdown: {
+    defaultSize: '2x2' as WidgetSize,
+    component: CountdownWidget,
+    supportedSizes: ['2x2', '4x2'] as WidgetSize[],
+  },
   'site-card': {
     defaultSize: '2x2' as WidgetSize,
     component: SiteCardWidget,
@@ -65,6 +74,7 @@ export type BuiltinWidgetId = keyof typeof BUILTIN_WIDGET_BASE_CONFIG
 const BUILTIN_WIDGET_ORDER: BuiltinWidgetId[] = [
   'welcome',
   'weather',
+  'countdown',
   'site-card',
 ]
 
@@ -72,6 +82,7 @@ const BUILTIN_WIDGET_ORDER: BuiltinWidgetId[] = [
 const WIDGET_NAME_KEY: Partial<Record<BuiltinWidgetId, keyof WidgetsI18n>> = {
   welcome: 'welcome',
   weather: 'weather',
+  countdown: 'countdown',
 }
 
 /**

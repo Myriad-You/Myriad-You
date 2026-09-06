@@ -1549,6 +1549,7 @@ export interface TranslationKeys {
     recentActivity: string
     friendLinks: string
     weather: string
+    countdown: string
     quote: string
     musicPlayer: string
     reportBilibili: string
@@ -2468,6 +2469,16 @@ export interface TranslationKeys {
     fetchWeatherFailed: string
     sunny: string
     sampleCity: string
+  }
+
+  // 发布倒计时小组件
+  countdownWidget: {
+    eventName: string
+    daysUnit: string
+    hoursUnit: string
+    minutesUnit: string
+    secondsUnit: string
+    released: string
   }
 
   // 语录小组件

@@ -1846,6 +1846,7 @@ export const enUS: TranslationKeys = {
     recentActivity: 'Recent Activity',
     friendLinks: 'Friend Links',
     weather: 'Weather',
+    countdown: 'Release Countdown',
     quote: 'Quote',
     musicPlayer: 'Music Player',
     reportBilibili: 'Bilibili Report',
@@ -2794,6 +2795,16 @@ export const enUS: TranslationKeys = {
     fetchWeatherFailed: 'Failed to fetch weather info',
     sunny: 'Sunny',
     sampleCity: 'Sample City',
+  },
+
+  // Release Countdown Widget
+  countdownWidget: {
+    eventName: 'Official Release',
+    daysUnit: 'days',
+    hoursUnit: 'hrs',
+    minutesUnit: 'min',
+    secondsUnit: 'sec',
+    released: 'Released',
   },
 
   // Quote Widget

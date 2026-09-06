@@ -1740,6 +1740,7 @@ export const zhCN: TranslationKeys = {
     recentActivity: '最近活动',
     friendLinks: '友情链接',
     weather: '天气',
+    countdown: '发布倒计时',
     quote: '一言',
     musicPlayer: '音乐播放器',
     reportBilibili: 'Bilibili报告',
@@ -2661,6 +2662,16 @@ export const zhCN: TranslationKeys = {
     fetchWeatherFailed: '获取天气信息失败',
     sunny: '晴',
     sampleCity: '示例城市',
+  },
+
+  // 发布倒计时小组件
+  countdownWidget: {
+    eventName: '正式版发布',
+    daysUnit: '天',
+    hoursUnit: '时',
+    minutesUnit: '分',
+    secondsUnit: '秒',
+    released: '已发布',
   },
 
   // 语录小组件

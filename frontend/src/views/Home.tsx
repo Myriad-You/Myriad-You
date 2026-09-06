@@ -46,6 +46,12 @@ function buildStaticLayout(): WidgetConfig[] {
       size: '2x2',
       position: { x: 4, y: 0 },
     },
+    {
+      id: 'default-countdown',
+      type: 'countdown',
+      size: '2x2',
+      position: { x: 0, y: 2 },
+    },
   ]
   // 板块卡:全部排在第一行,紧跟天气右侧(16 列恰好排满)。
   // 下载安装/界面预览/技术栈 暂时隐藏(要恢复时取消注释即可)

@@ -1828,6 +1828,7 @@ export const jaJP: TranslationKeys = {
     recentActivity: '最近のアクティビティ',
     friendLinks: '相互リンク',
     weather: '天気',
+    countdown: 'リリースカウントダウン',
     quote: '一言',
     musicPlayer: '音楽プレイヤー',
     reportBilibili: 'Bilibiliレポート',
@@ -2783,6 +2784,16 @@ export const jaJP: TranslationKeys = {
     fetchWeatherFailed: '天気情報の取得に失敗しました',
     sunny: '晴れ',
     sampleCity: 'サンプル都市',
+  },
+
+  // リリースカウントダウンウィジェット
+  countdownWidget: {
+    eventName: '正式リリース',
+    daysUnit: '日',
+    hoursUnit: '時間',
+    minutesUnit: '分',
+    secondsUnit: '秒',
+    released: 'リリース済み',
   },
 
   // 一言ウィジェット
