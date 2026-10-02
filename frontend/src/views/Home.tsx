@@ -12,6 +12,7 @@ import { motionShim as motion } from '@lib/motionShim'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AnimatedView from '../components/AnimatedView'
 import ConfigGeneratorModal from '../components/ConfigGeneratorModal'
+import DeploymentGuide from '../components/DeploymentGuide'
 import DetailModal from '../components/DetailModal'
 import WidgetGrid from '../components/WidgetGrid'
 import {
@@ -53,14 +54,14 @@ function buildStaticLayout(): WidgetConfig[] {
       position: { x: 0, y: 2 },
     },
   ]
-  // 板块卡:全部排在第一行,紧跟天气右侧(16 列恰好排满)。
-  // 下载安装/界面预览/技术栈 暂时隐藏(要恢复时取消注释即可)
+  // 第一行保留原布局,安装部署教程放在第二行倒计时右侧。
+  // 界面预览/技术栈 暂时隐藏(要恢复时取消注释即可)
   const cardSpecs: { sectionId: string; x: number; y: number; size?: WidgetSize }[] = [
     { sectionId: 'features', x: 6, y: 0 },
     { sectionId: 'intro', x: 8, y: 0 },
     { sectionId: 'about', x: 10, y: 0 },
     { sectionId: 'config-generator', x: 12, y: 0, size: '4x2' },
-    // { sectionId: 'download', x: 8, y: 0 },
+    { sectionId: 'download', x: 2, y: 2, size: '4x2' },
     // { sectionId: 'preview', x: 10, y: 0 },
     // { sectionId: 'tech-stack', x: 12, y: 0 },
   ]
@@ -82,7 +83,7 @@ export default function Home() {
   const isPageReady = usePageReady()
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
-  const [openSection, setOpenSection] = useState<SiteSection | null>(null)
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null)
   const [generatorOpen, setGeneratorOpen] = useState(false)
 
   // 标题字体 Hook
@@ -92,6 +93,7 @@ export default function Home() {
 
   // 站点文案经 i18n 解析,语言切换时重建
   const sections = useMemo(() => getSections(t), [t])
+  const openSection = sections.find((section) => section.id === openSectionId)
   const homeConfig = useMemo(() => getHomeConfig(t), [t])
   const dashboardTitle = homeConfig.title
 
@@ -130,7 +132,12 @@ export default function Home() {
       window.open(section.href, '_blank', 'noopener,noreferrer')
       return
     }
-    setOpenSection(section)
+    setOpenSectionId(section.id)
+  }, [])
+
+  const openGeneratorFromGuide = useCallback(() => {
+    setOpenSectionId(null)
+    setGeneratorOpen(true)
   }, [])
 
   // welcome 小组件内部的引导卡点击 → 打开对应板块详情
@@ -228,7 +235,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 安装配置生成器弹窗(移植的 tapp 生成器,挂载于弹窗内) */}
+      {/* 安装部署器弹窗,由独立运行时加载官方 Tapp */}
       <ConfigGeneratorModal
         open={generatorOpen}
         onClose={() => setGeneratorOpen(false)}
@@ -236,11 +243,16 @@ export default function Home() {
 
       {/* 板块详情弹窗 */}
       <DetailModal
-        open={openSection !== null}
-        onClose={() => setOpenSection(null)}
+        open={Boolean(openSection)}
+        onClose={() => setOpenSectionId(null)}
         title={openSection?.title ?? ''}
       >
-        {openSection && (
+        {openSection?.detail.guide ? (
+          <DeploymentGuide
+            content={openSection.detail.guide}
+            onOpenGenerator={openGeneratorFromGuide}
+          />
+        ) : openSection && (
           <div className="space-y-4">
             {openSection.detail.paragraphs?.map((paragraph) => (
               <p key={paragraph} className="leading-relaxed">

@@ -36,7 +36,7 @@ interface NavigationGuide {
 const WELCOME_ICON_ASSET = '/icons/widgets/welcome.webp'
 
 /** 引导卡轮播的板块(顺序即轮播顺序;与首页可见板块卡保持一致) */
-const GUIDE_SECTION_IDS = ['features', 'intro', 'config-generator', 'about']
+const GUIDE_SECTION_IDS = ['features', 'intro', 'download', 'config-generator', 'about']
 
 export const WelcomeWidget = memo(
   ({ config, isEditMode, isPreview }: WidgetComponentProps) => {

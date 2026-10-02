@@ -3,6 +3,8 @@
  * 支持中文、英文和日文，默认根据用户浏览器语言设置
  */
 
+import type { DeploymentGuideContent } from '../content/deployment'
+
 export type Locale = 'zh-CN' | 'en-US' | 'ja-JP'
 
 export interface TranslationKeys {
@@ -3953,6 +3955,7 @@ export interface TranslationKeys {
       l4: string
     }
     download: {
+      guide: DeploymentGuideContent
       title: string
       summary: string
       p1: string
@@ -3984,6 +3987,11 @@ export interface TranslationKeys {
       title: string
       summary: string
       p1: string
+      loading: string
+      loadError: string
+      retry: string
+      source: string
+      loadedVersion: string
     }
   }
 }

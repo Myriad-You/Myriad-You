@@ -1,0 +1,137 @@
+import type { DeploymentGuideContent } from '../../content/deployment'
+import { deploymentCommands as commands, deploymentLinks as links } from '../../content/deployment'
+
+export const enDeploymentGuide: DeploymentGuideContent = {
+  intro: 'Start here to set up your own Myriad site. We recommend generating your configuration with the deployment generator, then deploying it on your Docker host or hosting panel. Follow the steps below for a first installation, an existing-site upgrade, and routine maintenance.',
+  verifiedLabel: 'Versions checked for this guide',
+  openGenerator: 'Open deployment generator',
+  contentsLabel: 'Guide contents',
+  resourcesLabel: 'Official docs and releases',
+  sections: [
+    {
+      id: 'prepare',
+      title: '1. Prepare your server and site address',
+      paragraphs: ['Prepare a host that can run Docker and reach the image registry. Command-line deployment requires Bash, Docker Compose v2 or later, and jq. Run operational commands on the host that actually runs the Docker daemon.'],
+      list: [
+        'The generator uses a domain and HTTPS. For a public site, point your domain to the server and prepare a certificate. For LAN access using only an IP address and HTTP, use the official template in section 8 and set the actual origin, including its port.',
+        'Choose a fixed deployment directory, such as /opt/myriad. Do not use a symlink path or a path containing commas.',
+        'Expose only the HTTP entry point of Myriad proxy to visitors. Keep PostgreSQL, backend, worker, and updater ports internal.',
+        'A NAS or hosting panel must support real host directories and the required mount permissions. Verify Windows / WSL path sharing for your particular Docker environment.',
+      ],
+      commands: [{ label: 'Check command-line prerequisites', code: commands.prerequisites }],
+      links: [{ label: 'Deployment directories and platform limits', href: links.storage }],
+    },
+    {
+      id: 'generate',
+      title: '2. Generate your deployment configuration',
+      paragraphs: ['Open the deployment generator on this page. Start directly for a new site. For an existing site, select “Upgrade existing installation” first; see section 6 for the limits. Configuration is generated in your browser. Before entering any details, confirm that you are using the trusted official website.'],
+      list: [
+        'Select your actual deployment platform: generic Docker / CLI, 1Panel, BaoTa, aaPanel, Portainer, Dockge, Coolify, Dokploy, Nginx Proxy Manager, or Caddy.',
+        'Enter the real absolute directory on the Docker host where your Compose file will reside. A project directory shown by a panel may differ from a path inside a container.',
+        'Enter the primary domain, additional domains, and the proxy host port. The generator defaults to port 18080. Enter domains without a protocol or path.',
+        'Prepare the site and certificate as instructed, then choose bundled PostgreSQL 18 or external PostgreSQL. An external database also requires separate database logins for web, persona, and federation.',
+        'Choose a resource profile. In advanced options, check the actual backend, frontend, proxy, and updater image versions. Prefer fixed tags from official releases.',
+      ],
+      note: '“Get latest versions” requires a working version lookup endpoint. If the lookup fails, enter versions from the official release information and confirm that the images can be pulled. Do not substitute latest. Arrange your own backups for an external database; the updater does not snapshot it.',
+      links: [{ label: 'Deployment generator instructions', href: links.generator }, { label: 'Official Myriad releases', href: links.releases }],
+    },
+    {
+      id: 'deploy',
+      title: '3. Save the files and deploy',
+      paragraphs: ['The completion page generates docker-compose.yml, .env, docker-guard.env, and DEPLOY.md. Save the first two in the deployment directory you entered. Save docker-guard.env as guard-policy/docker-guard.env under that directory. Save reverse proxy files as required by your selected platform.'],
+      list: [
+        'Complete all storage preparation steps in DEPLOY.md first: create data, cache, and the worker subdirectories, then set the correct permissions.',
+        'For a bundled database, prepare pgdata as instructed. The database and tables are created automatically on first startup.',
+        'For CLI deployment, follow DEPLOY.md to validate the configuration, pull images, and start the services. For a panel, import the Compose configuration according to its deployment instructions.',
+        'After startup, inspect service status and logs. Confirm that backend, federation-worker, persona-worker, and their dependencies are running correctly.',
+      ],
+      note: 'New installations bind data and cache directly into the containers. data contains media, Tapp installations, persona assets, and runtime keys, so keep it secure. cache can be rebuilt. Do not skip directory preparation and run docker compose up directly, or overwrite an existing site’s storage configuration with a new template.',
+      commands: [{ label: 'Check after preparing directories and starting services', code: 'docker compose --env-file .env config --quiet\ndocker compose --env-file .env ps' }],
+      links: [{ label: 'Data directories and legacy volume migration', href: links.storage }],
+    },
+    {
+      id: 'https',
+      title: '4. Configure your domain, HTTPS, and reverse proxy',
+      paragraphs: ['Configure certificates and the reverse proxy using the instructions generated for your platform. Nginx, Caddy, NPM, or a platform proxy should forward the entire site to the HTTP entry point of Myriad proxy. Federation discovery, media, and persistent connections also need this entry point.'],
+      list: [
+        'Set BASE_URL, FRONTEND_URL, and CORS_ORIGINS to match the full origin you actually use, such as https://myriad.example.com.',
+        'If the reverse proxy and Myriad are both on the host, you can forward to 127.0.0.1:18080. If the proxy runs in another container, use an address or Docker network it can reach; do not reuse that loopback address directly.',
+        'Do not forward only /api or point the upstream at backend port 1103.',
+        'After changing ports, environment variables, or Compose configuration, recreate the affected containers. A plain restart does not apply these changes.',
+      ],
+      links: [{ label: 'Production ports and routing', href: links.ports }],
+    },
+    {
+      id: 'setup',
+      title: '5. Visit your site and create the site owner',
+      paragraphs: ['Open your configured site address to enter the setup wizard. Official Compose configurations already provide the database connection, so enter MYRIAD_SETUP_SECRET from .env (the setup passphrase), then create the site owner account. You can also use the initialization link containing #setup_secret= provided by the generator.'],
+      list: [
+        'The site owner username must contain 3–20 letters, digits, or underscores. The password must contain at least 8 characters, including both letters and digits.',
+        'After setup, open /config for site information and platform connections. Agent, persona, and Bot settings are at /agent/settings.',
+        'Both the initialization link and setup passphrase can be used to claim the site. Do not share them or put the passphrase in URL query parameters or public logs.',
+      ],
+      note: 'An existing site does not need another site owner setup. Once the site is claimed, database failure will not reopen the setup wizard. Repair the database connection first.',
+      links: [{ label: 'Setup passphrase and wizard troubleshooting', href: links.setup }],
+    },
+    {
+      id: 'upgrade',
+      title: '6. Upgrade an existing site and manage updates',
+      paragraphs: ['Perform routine version updates from the administrator interface at /config → About → Update Management. Updates enter maintenance mode. Failed preflight checks or recovery may require administrator action. Prepare a full-site backup before upgrading.'],
+      list: [
+        'To update an existing Compose configuration, import both the original docker-compose.yml and .env into the generator. Read and inspect them, then review the report before generating the updated files.',
+        'Keep the original Compose project name, real host deployment directory, database, and storage sources. The generator preserves recognized configuration; it does not move data.',
+        'Switching legacy volumes to data/cache directories requires a separate migration with downtime. Direct directory mounts require updater / Guard v0.5.8 or later.',
+        'PostgreSQL clusters older than 18, unknown service fields, or nonstandard mounts may be rejected for automatic upgrades. Handle them manually according to the report and official documentation.',
+        'For an external database, prepare separate worker logins and database backups first. Rolling back images alone cannot reverse database migrations.',
+      ],
+      note: 'Do not generate a new set of passwords for an existing site, or simply change the PostgreSQL image major version to 18 and start it. The generator does not perform PostgreSQL major-version migrations.',
+      links: [{ label: 'Updates and recovery', href: links.updater }, { label: 'Storage migration', href: links.storage }],
+    },
+    {
+      id: 'backup',
+      title: '7. Back up and restore',
+      paragraphs: ['A complete disaster recovery backup needs the database, data, and .env. The updater’s pgdata snapshots are only for update rollback; they do not contain media, Tapp installations, or persona files. Backups also contain keys. Store them off the deployment host and restrict access.'],
+      list: [
+        'If you use the official repository scripts and your database is part of the Compose stack, you can run backup.sh below. It briefly stops writes from web and both workers, then resumes their operation.',
+        'The files exported by the generator do not include backup.sh. Prepare the appropriate scripts and dependencies according to the full-site backup documentation before proceeding.',
+        'Back up external PostgreSQL through your database operations process. Separately back up data and .env.',
+        'Restore overwrites the current database, data, and .env. The official restore script requires the same Compose project and a target PostgreSQL password matching the backup. Verify these conditions and preserve your current data before proceeding.',
+      ],
+      commands: [{ label: 'In the official repository directory: bundled database backup', code: commands.backup }],
+      links: [{ label: 'Full backup and restore steps', href: links.backup }, { label: 'External PostgreSQL', href: links.externalDatabase }],
+    },
+    {
+      id: 'manual',
+      title: '8. An alternative CLI installation path',
+      paragraphs: ['If you do not use the configuration generator, use the official repository template matching the version checked for this guide. Run the following commands on your server, then edit .env before starting the services.'],
+      commands: [
+        { label: 'Get the release templates and scripts', code: commands.manualPrepare },
+        { label: 'Start after filling in .env', code: commands.manualStart },
+      ],
+      list: [
+        'Set different POSTGRES_PASSWORD and JWT_SECRET values, each at least 32 characters, plus BASE_URL, FRONTEND_URL, and CORS_ORIGINS. Check MYRIAD_TAG, PROXY_TAG, and UPDATER_TAG.',
+        'deploy.sh up generates missing setup passphrases, update credentials, and worker database passwords, and prepares directories and the Guard policy.',
+        'The official template defaults HTTP_PORT to 80. If an existing reverse proxy uses port 80, change it in .env to a free port such as 18080.',
+      ],
+      links: [{ label: 'Official quick start', href: links.quickstart }],
+    },
+    {
+      id: 'troubleshoot',
+      title: '9. Troubleshoot startup failures',
+      list: [
+        'Image pull fails: check network access, the registry, and the fixed tag. Confirm that the version has been released. Do not retry pulls unconditionally.',
+        'Directory permission or mount errors: check the real host directory and the preparation steps in DEPLOY.md. Do not bypass them with chmod 777 or a temporary empty directory.',
+        'Setup returns 401: check the setup passphrase. If the site is already claimed, repair the database; do not delete the claim marker.',
+        'The page opens but features do not work: /health only indicates that the process is alive. /ready checks the database, migrations, routes, and storage. Inspect the service logs below.',
+        'Redact credentials before sharing diagnostic information. Do not publish .env, initialization links, or complete compose config output that may contain database passwords.',
+      ],
+      commands: [{ label: 'Inspect status and recent logs in the deployment directory', code: commands.status }],
+    },
+  ],
+  resources: [
+    { label: 'Myriad releases', href: links.releases },
+    { label: 'Deployment generator source and instructions', href: links.generator },
+    { label: 'Docker deployment', href: links.docker },
+    { label: 'Full-site backups', href: links.backup },
+  ],
+}
