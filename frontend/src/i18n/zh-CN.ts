@@ -3,6 +3,7 @@
  */
 
 import type { TranslationKeys } from './index'
+import { zhDeploymentGuide } from './deployment/zh-CN'
 
 export const zhCN: TranslationKeys = {
   // 通用
@@ -4085,12 +4086,12 @@ export const zhCN: TranslationKeys = {
 
   // 官网站点内容
   site: {
-    slogan: 'A myriad of lights, in one place.',
+    slogan: '万千光芒，汇于一处。',
     description:
       'Myriad 是一个自托管的个人数字生活展示入口，用于聚合、整理和展示来自多个平台的个人数据。',
     homeTitle: 'Myriad',
     homeUserName: 'Myriad',
-    homeUserBio: 'A myriad of lights, in one place.',
+    homeUserBio: '万千光芒，汇于一处。',
     copyright: '© {year} Myriad',
     intro: {
       title: '产品介绍',
@@ -4124,13 +4125,14 @@ export const zhCN: TranslationKeys = {
       l4: '性能自适应的动效分级',
     },
     download: {
-      title: '下载安装',
-      summary: '自托管部署,几条命令即可上线。',
-      p1: 'Myriad 采用前后端一体部署,你只需要一台能跑 Node.js 的服务器(或 NAS、树莓派),即可完成安装。',
-      l1: '克隆仓库:git clone <repository-url>',
-      l2: '安装依赖:pnpm install',
-      l3: '构建前端:pnpm build',
-      l4: '启动服务:pnpm start',
+      guide: zhDeploymentGuide,
+      title: '安装部署教程',
+      summary: '从安装部署器到首次初始化,也包含旧站升级与备份。',
+      p1: '使用 Docker 与安装部署器部署 Myriad,按教程完成配置、上线和维护。',
+      l1: '准备 Docker 主机、域名与部署目录',
+      l2: '生成配置并按 DEPLOY.md 部署',
+      l3: '用安装暗号创建站长账号',
+      l4: '设置 HTTPS,准备升级与整站备份',
       linkRepo: 'GitHub 仓库',
     },
     techStack: {
@@ -4152,9 +4154,14 @@ export const zhCN: TranslationKeys = {
       linkRepo: 'GitHub 仓库',
     },
     configGenerator: {
-      title: '安装配置生成',
-      summary: '在线生成安装配置,几步完成部署。',
-      p1: '使用在线配置生成器,按向导选择你需要的模块与数据源,自动生成安装配置。',
+      title: 'Myriad 安装部署器',
+      summary: '为新站生成配置,或导入旧编排核对升级。',
+      p1: '选择部署平台、域名、数据库和资源,生成 Compose、环境变量与部署说明；已有站点可先导入旧配置进行兼容性检查。',
+      loading: '正在从官方商店加载最新部署器…',
+      loadError: '无法加载官方部署器。请检查到 GitHub 的网络连接后重试，或查看官方说明。',
+      retry: '重新加载',
+      source: '官方源码与说明',
+      loadedVersion: '官方部署器 {version} · {revision}',
     },
   },
 }

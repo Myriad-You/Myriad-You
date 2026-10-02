@@ -3,6 +3,7 @@
  */
 
 import type { TranslationKeys } from './index'
+import { enDeploymentGuide } from './deployment/en-US'
 
 export const enUS: TranslationKeys = {
   // Common
@@ -4316,13 +4317,14 @@ export const enUS: TranslationKeys = {
       l4: 'Performance-adaptive motion tiers',
     },
     download: {
-      title: 'Download & Install',
-      summary: 'Self-hosted deployment — just a few commands to go live.',
-      p1: 'Myriad ships as an all-in-one deployment. Any server that runs Node.js (or a NAS, or a Raspberry Pi) is enough.',
-      l1: 'Clone the repo: git clone <repository-url>',
-      l2: 'Install dependencies: pnpm install',
-      l3: 'Build the frontend: pnpm build',
-      l4: 'Start the service: pnpm start',
+      guide: enDeploymentGuide,
+      title: 'Installation Guide',
+      summary: 'From configuration to first setup, with upgrades and backups.',
+      p1: 'Deploy Myriad with Docker and the installation generator, then follow the guide for setup and maintenance.',
+      l1: 'Prepare Docker, your domain and deployment directory',
+      l2: 'Generate configuration and follow DEPLOY.md',
+      l3: 'Create the site owner with the setup passphrase',
+      l4: 'Configure HTTPS, upgrades and complete backups',
       linkRepo: 'GitHub Repository',
     },
     techStack: {
@@ -4345,9 +4347,14 @@ export const enUS: TranslationKeys = {
       linkRepo: 'GitHub Repository',
     },
     configGenerator: {
-      title: 'Config Generator',
-      summary: 'Generate your install config online — deploy in a few steps.',
-      p1: 'Use the online config generator: follow the wizard to pick the modules and data sources you need, and an install config is generated automatically.',
+      title: 'Myriad Installation Generator',
+      summary: 'Generate a new deployment or check an existing stack for upgrade.',
+      p1: 'Choose a platform, domain, database and resource profile to generate Compose, environment variables and deployment instructions. Existing sites can import their configuration for compatibility checks.',
+      loading: 'Loading the latest generator from the official store…',
+      loadError: 'Unable to load the official generator. Check your connection to GitHub and retry, or read the official instructions.',
+      retry: 'Reload',
+      source: 'Official source and instructions',
+      loadedVersion: 'Official generator {version} · {revision}',
     },
   },
 }

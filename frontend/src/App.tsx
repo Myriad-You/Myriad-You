@@ -9,8 +9,9 @@
 
 import { useEffect } from 'react'
 import CustomScrollbar from './components/CustomScrollbar'
+import { getSiteMeta } from './content/site'
 import { AnimationPreferenceProvider } from './contexts/AnimationPreferenceContext'
-import { I18nProvider } from './contexts/I18nContext'
+import { I18nProvider, useI18n } from './contexts/I18nContext'
 import { AppLayout } from './layouts/AppLayout'
 import Home from './views/Home'
 import './styles/fonts.css'
@@ -21,6 +22,16 @@ import './styles/utility.css'
 import './styles/modals.css'
 import './styles/overrides.css'
 import './styles/performance.css'
+
+function SiteMetadata() {
+  const { t } = useI18n()
+  useEffect(() => {
+    const metadata = getSiteMeta(t)
+    document.title = metadata.title
+    document.getElementById('meta-description')?.setAttribute('content', metadata.description)
+  }, [t])
+  return null
+}
 
 export function App() {
   // 在 React 应用挂载完成后标记就绪状态(双帧延迟确保基础布局已渲染)
@@ -43,6 +54,7 @@ export function App() {
 
   return (
     <I18nProvider>
+      <SiteMetadata />
       <AnimationPreferenceProvider>
         <CustomScrollbar />
         <AppLayout>

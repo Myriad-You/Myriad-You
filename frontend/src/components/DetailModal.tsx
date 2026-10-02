@@ -126,7 +126,8 @@ export function DetailModal({
         >
           <motion.div
             key="detail-modal-content"
-            className="modal-content p-6 md:p-8"
+            className="modal-content flex flex-col p-6 md:p-8"
+            style={{ overflowY: 'hidden' }}
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
@@ -134,7 +135,7 @@ export function DetailModal({
             aria-modal="true"
             aria-labelledby={titleId.current}
           >
-            <div className="mb-4 flex items-start justify-between gap-4">
+            <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
               <h2
                 id={titleId.current}
                 className="text-xl font-semibold text-(--text-primary) md:text-2xl"
@@ -150,7 +151,9 @@ export function DetailModal({
                 <LuX className="h-5 w-5" />
               </button>
             </div>
-            <div className="text-(--text-secondary)">{renderChildren}</div>
+            <div className="min-h-0 overflow-y-auto overscroll-contain text-(--text-secondary)">
+              {renderChildren}
+            </div>
           </motion.div>
         </motion.div>
       )}

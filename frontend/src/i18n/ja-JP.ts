@@ -3,6 +3,7 @@
  */
 
 import type { TranslationKeys } from './index'
+import { jaDeploymentGuide } from './deployment/ja-JP'
 
 export const jaJP: TranslationKeys = {
   // 共通
@@ -4273,12 +4274,12 @@ export const jaJP: TranslationKeys = {
 
   // 公式サイトコンテンツ
   site: {
-    slogan: 'A myriad of lights, in one place.',
+    slogan: '無数の光を、ひとつの場所に。',
     description:
       'Myriad はセルフホスト型の個人デジタルライフ・ショーケースです。複数のプラットフォームに散らばる個人データを集約・整理して展示します。',
     homeTitle: 'Myriad',
     homeUserName: 'Myriad',
-    homeUserBio: 'A myriad of lights, in one place.',
+    homeUserBio: '無数の光を、ひとつの場所に。',
     copyright: '© {year} Myriad',
     intro: {
       title: '製品紹介',
@@ -4312,13 +4313,14 @@ export const jaJP: TranslationKeys = {
       l4: '性能に応じたモーション段階',
     },
     download: {
-      title: 'ダウンロード・インストール',
-      summary: 'セルフホストデプロイ。数コマンドで公開できます。',
-      p1: 'Myriad はフロントエンドとバックエンド一体型でデプロイします。Node.js が動くサーバー(または NAS、ラズベリーパイ)があればインストールできます。',
-      l1: 'リポジトリをクローン:git clone <repository-url>',
-      l2: '依存関係をインストール:pnpm install',
-      l3: 'フロントエンドをビルド:pnpm build',
-      l4: 'サービスを起動:pnpm start',
+      guide: jaDeploymentGuide,
+      title: 'インストールガイド',
+      summary: '設定生成から初期設定まで。更新とバックアップも説明。',
+      p1: 'Docker とインストールジェネレーターで Myriad をデプロイし、ガイドに沿って初期設定と運用を行います。',
+      l1: 'Docker、ドメイン、配置ディレクトリを準備',
+      l2: '設定を生成して DEPLOY.md に沿ってデプロイ',
+      l3: 'セットアップ合言葉でサイト所有者を作成',
+      l4: 'HTTPS、更新、全体バックアップを設定',
       linkRepo: 'GitHub リポジトリ',
     },
     techStack: {
@@ -4340,9 +4342,14 @@ export const jaJP: TranslationKeys = {
       linkRepo: 'GitHub リポジトリ',
     },
     configGenerator: {
-      title: '設定ジェネレーター',
-      summary: 'インストール設定をオンラインで生成。数ステップでデプロイ。',
-      p1: 'オンライン設定ジェネレーターを使い、ウィザードに沿って必要なモジュールとデータソースを選ぶだけで、インストール設定が自動生成されます。',
+      title: 'Myriad インストールジェネレーター',
+      summary: '新規配置の設定生成と既存構成の更新チェック。',
+      p1: 'プラットフォーム、ドメイン、データベース、リソースを選び、Compose、環境変数、配置手順を生成します。既存サイトの設定を取り込んで互換性も確認できます。',
+      loading: '公式ストアから最新ジェネレーターを読み込み中…',
+      loadError: '公式ジェネレーターを読み込めませんでした。GitHub への接続を確認して再試行するか、公式の説明をご覧ください。',
+      retry: '再読み込み',
+      source: '公式ソースと説明',
+      loadedVersion: '公式ジェネレーター {version} · {revision}',
     },
   },
 }

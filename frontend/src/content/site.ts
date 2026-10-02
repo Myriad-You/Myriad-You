@@ -9,6 +9,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 import type { TranslationKeys } from '../i18n'
+import type { DeploymentGuideContent } from './deployment'
 import {
   LuCpu,
   LuDownload,
@@ -30,6 +31,8 @@ export interface SiteSectionLink {
 }
 
 export interface SiteSectionDetail {
+  /** 安装部署教程 */
+  guide?: DeploymentGuideContent
   /** 详情弹窗正文段落 */
   paragraphs?: string[]
   /** 详情弹窗要点列表 */
@@ -60,6 +63,7 @@ export const siteName = 'Myriad'
 /** 站点标语与描述(经 i18n 解析) */
 export function getSiteMeta(t: TranslationKeys) {
   return {
+    title: `${siteName} - ${t.site.slogan}`,
     slogan: t.site.slogan,
     description: t.site.description,
   } as const
@@ -174,6 +178,7 @@ export function getSections(t: TranslationKeys): readonly SiteSection[] {
       title: s.download.title,
       summary: s.download.summary,
       detail: {
+        guide: s.download.guide,
         paragraphs: [s.download.p1],
         list: [s.download.l1, s.download.l2, s.download.l3, s.download.l4],
         links: [{ label: s.download.linkRepo, href: REPO_URL }],

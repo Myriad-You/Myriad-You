@@ -1,0 +1,137 @@
+import type { DeploymentGuideContent } from '../../content/deployment'
+import { deploymentCommands as commands, deploymentLinks as links } from '../../content/deployment'
+
+export const zhDeploymentGuide: DeploymentGuideContent = {
+  intro: '从这里准备自己的 Myriad 站点。推荐使用安装部署器生成配置，再在你的 Docker 主机或面板中部署；首次安装、旧站升级和日常维护分别按下列步骤进行。',
+  verifiedLabel: '教程核对版本',
+  openGenerator: '打开安装部署器',
+  contentsLabel: '教程目录',
+  resourcesLabel: '官方文档与版本',
+  sections: [
+    {
+      id: 'prepare',
+      title: '1. 准备服务器与访问地址',
+      paragraphs: ['准备一台可运行 Docker 的主机，并确保能访问镜像仓库。命令行部署需要 Bash、Docker Compose v2 或更新版本和 jq；运维操作须在实际运行 Docker daemon 的主机上完成。'],
+      list: [
+        '部署器按域名与 HTTPS 生成配置，公网站点先把域名解析到服务器并准备证书；仅使用局域网 IP 与 HTTP 时，请走第 8 节官方模板并填写包含端口的实际访问地址。',
+        '选一个固定的部署目录，例如 /opt/myriad。不要使用软链接路径，路径中不要含逗号。',
+        '只向访问者开放 Myriad proxy 的 HTTP 入口；PostgreSQL、backend、worker 和 updater 端口保持内部访问。',
+        'NAS 或面板需要能配置真实宿主目录与挂载权限。Windows / WSL 的路径共享须按具体 Docker 环境核实。',
+      ],
+      commands: [{ label: '命令行环境检查', code: commands.prerequisites }],
+      links: [{ label: '部署目录与平台限制', href: links.storage }],
+    },
+    {
+      id: 'generate',
+      title: '2. 用安装部署器生成配置',
+      paragraphs: ['打开本页的安装部署器。新站直接开始；已有站点先选择“升级已有编排”，具体限制见第 6 节。配置在浏览器内生成，填写前请确认你正在使用可信的官网。'],
+      list: [
+        '选择实际部署平台：通用 Docker / CLI、1Panel、宝塔、aaPanel、Portainer、Dockge、Coolify、Dokploy、Nginx Proxy Manager 或 Caddy。',
+        '填写 Docker 主机上 Compose 文件所在的真实绝对目录。面板显示的项目目录可能与容器内部路径不同。',
+        '填写主域名、附加域名和 proxy 的宿主端口；生成器默认端口为 18080，填写域名时不要带协议或路径。',
+        '按提示准备站点与证书，再选择内置 PostgreSQL 18 或外置 PostgreSQL。外置库还需准备 web、persona、federation 的独立数据库登录。',
+        '选择资源档位。高级选项中核对 backend、frontend、proxy、updater 的实际镜像版本；优先选正式发布的固定 tag。',
+      ],
+      note: '“获取最新版本”需要可用的版本查询接口。查询失败时，按正式发布信息手填版本并确认镜像可拉取；不要用 latest 代替。外置数据库需要自行安排备份，更新器不会替它保存数据库快照。',
+      links: [{ label: '安装部署器使用说明', href: links.generator }, { label: 'Myriad 正式版本', href: links.releases }],
+    },
+    {
+      id: 'deploy',
+      title: '3. 保存文件并部署',
+      paragraphs: ['完成页会生成 docker-compose.yml、.env、docker-guard.env 和 DEPLOY.md。把前两项放进刚才填写的部署目录，将 docker-guard.env 保存为该目录下的 guard-policy/docker-guard.env；反向代理文件按所选平台保存。'],
+      list: [
+        '先完整执行 DEPLOY.md 的存储准备步骤，创建 data、cache 及 worker 子目录，并设置正确权限。',
+        '使用内置数据库时，按说明准备 pgdata。首次启动会自动创建数据库与表。',
+        '在 CLI 中按 DEPLOY.md 验证配置、拉取镜像并启动；使用面板时依其部署步骤导入编排。',
+        '启动后查看服务状态和日志，确认 backend、federation-worker、persona-worker 及其依赖正常。',
+      ],
+      note: '新部署把 data 和 cache 直接挂载到容器。data 包含媒体、Tapp、人设资产与运行时密钥，须妥善保管；cache 可以重建。不要跳过目录准备直接执行 docker compose up，也不要用新模板覆盖旧站的存储配置。',
+      commands: [{ label: '完成目录准备与启动后检查', code: 'docker compose --env-file .env config --quiet\ndocker compose --env-file .env ps' }],
+      links: [{ label: '数据目录与旧卷迁移', href: links.storage }],
+    },
+    {
+      id: 'https',
+      title: '4. 配好域名、HTTPS 与反向代理',
+      paragraphs: ['按照部署器为你的平台生成的说明配置证书与反向代理。Nginx、Caddy、NPM 或平台代理应把整个站点转发到 Myriad proxy 的 HTTP 入口；联邦发现、媒体、长连接也需要走这条入口。'],
+      list: [
+        '让 BASE_URL、FRONTEND_URL 和 CORS_ORIGINS 与实际访问的完整 origin 一致，例如 https://myriad.example.com。',
+        '反向代理与 Myriad 都在宿主机上时可转发到 127.0.0.1:18080；代理在另一容器时应使用其能访问的地址或 Docker 网络，不能直接照用该回环地址。',
+        '不要只转发 /api，也不要把 upstream 指向 backend 的 1103。',
+        '修改端口、环境变量或编排后需重新创建相应容器；单纯 restart 不会应用这些变化。',
+      ],
+      links: [{ label: '生产端口与路由', href: links.ports }],
+    },
+    {
+      id: 'setup',
+      title: '5. 首次访问并创建站长',
+      paragraphs: ['打开你配置的站点地址，进入初始化向导。官方编排已经预置数据库，因此需要填写 .env 中的 MYRIAD_SETUP_SECRET（安装暗号），再创建站长账号。也可以使用部署器提供的带 #setup_secret= 的初始化链接。'],
+      list: [
+        '站长用户名为 3–20 位字母、数字或下划线；密码至少 8 位，并包含字母与数字。',
+        '完成后进入 /config 设置站点信息和平台连接；Agent、人设和 Bot 设置在 /agent/settings。',
+        '初始化链接与安装暗号都能用于认领站点，不要分享。不要把暗号放入 URL 查询参数或公开日志。',
+      ],
+      note: '已有站点不需要再次创建站长。认领之后，即使数据库故障，安装向导也不会重新开放；应先修复数据库连接。',
+      links: [{ label: '安装暗号与向导排错', href: links.setup }],
+    },
+    {
+      id: 'upgrade',
+      title: '6. 旧站升级与日常更新',
+      paragraphs: ['日常版本更新从管理员 /config → 关于 → 更新管理执行。更新过程中会进入维护状态，预检或恢复失败时可能需要管理员处理；升级前仍应准备整站备份。'],
+      list: [
+        '更新已有编排时，在部署器中同时导入原 docker-compose.yml 与 .env，读取并检查，核对报告后再继续生成。',
+        '保持原 Compose 项目名、真实宿主部署目录、数据库与存储来源。生成器会保留可识别配置，不负责搬迁数据。',
+        '旧卷切换为 data/cache 目录需单独停机迁移；直接目录布局要求 updater / Guard 至少 v0.5.8。',
+        'PostgreSQL 18 之前的集群、未知服务字段或非标准挂载等情况可能被拒绝自动升级，应按报告和官方文档人工处理。',
+        '外置数据库先准备独立 worker 登录与自身备份；仅回退镜像不能撤销数据库迁移。',
+      ],
+      note: '不要为旧站重新生成一套密码，或把 PostgreSQL 镜像的大版本直接改为 18 后启动。部署器不执行 PostgreSQL 大版本迁移。',
+      links: [{ label: '更新与恢复说明', href: links.updater }, { label: '存储迁移说明', href: links.storage }],
+    },
+    {
+      id: 'backup',
+      title: '7. 备份与恢复',
+      paragraphs: ['完整灾备需要数据库、data 与 .env。更新器保存的 pgdata 快照只用于升级回滚，不含媒体、Tapp 与人设文件。备份里也有密钥，应离机保存并限制访问。'],
+      list: [
+        '使用官方仓库脚本且数据库在编排内时，可以执行下方 backup.sh。它会短暂停止 web 与两个 worker 的写入，再恢复运行。',
+        '生成器导出的文件不包含 backup.sh；请按整站备份文档准备对应脚本与依赖后操作。',
+        '外置 PostgreSQL 由数据库运维自行备份，同时另行备份 data 与 .env。',
+        '恢复会覆盖当前数据库、data 和 .env。官方恢复脚本要求同一 Compose 项目，且目标 PostgreSQL 口令与备份一致；操作前先核对这些条件并保存当前数据。',
+      ],
+      commands: [{ label: '官方仓库目录内：内置数据库备份', code: commands.backup }],
+      links: [{ label: '完整备份与恢复步骤', href: links.backup }, { label: '外置 PostgreSQL', href: links.externalDatabase }],
+    },
+    {
+      id: 'manual',
+      title: '8. 命令行安装的另一条路径',
+      paragraphs: ['如果不使用配置生成器，可以直接使用与教程核对版本对应的官方仓库模板。下面的命令在服务器上执行，随后编辑 .env 再启动。'],
+      commands: [
+        { label: '获取正式版本的模板与脚本', code: commands.manualPrepare },
+        { label: '填写 .env 后启动', code: commands.manualStart },
+      ],
+      list: [
+        '填写不同的 POSTGRES_PASSWORD 与 JWT_SECRET（至少 32 字符），以及 BASE_URL、FRONTEND_URL、CORS_ORIGINS；核对 MYRIAD_TAG、PROXY_TAG 和 UPDATER_TAG。',
+        'deploy.sh up 会补齐空的安装暗号、更新凭据和 worker 数据库口令，准备目录及 Guard 策略。',
+        '官方模板 HTTP_PORT 默认是 80；已有反向代理占用 80 时，可在 .env 中改成 18080 等空闲端口。',
+      ],
+      links: [{ label: '官方快速开始', href: links.quickstart }],
+    },
+    {
+      id: 'troubleshoot',
+      title: '9. 启动失败时检查什么',
+      list: [
+        '镜像拉取失败：核对网络、镜像仓库与固定 tag，确认该版本已发布；不要无条件重复拉取。',
+        '目录权限或挂载报错：核对真实宿主目录与 DEPLOY.md 的准备步骤，不要用 chmod 777 或临时空目录绕过。',
+        '安装返回 401：核对安装暗号；若站点已认领，修复数据库即可，不要删除认领标记。',
+        '页面能打开但业务不可用：/health 只表示进程存活，/ready 才检查数据库、迁移、路由与存储；查看下面的服务日志。',
+        '排错分享前遮盖凭据；不要公开 .env、安装链接或可能含数据库口令的完整 compose config 输出。',
+      ],
+      commands: [{ label: '部署目录内查看状态与最近日志', code: commands.status }],
+    },
+  ],
+  resources: [
+    { label: 'Myriad 发布记录', href: links.releases },
+    { label: '安装部署器源码与说明', href: links.generator },
+    { label: 'Docker 部署', href: links.docker },
+    { label: '整站备份', href: links.backup },
+  ],
+}
