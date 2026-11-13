@@ -4287,7 +4287,7 @@ export const enUS: TranslationKeys = {
       summary:
         'A self-hosted personal digital-life showcase that brings your data together.',
       p1: 'Myriad is a self-hosted showcase for your personal digital life. It aggregates, organizes, and presents your data scattered across platforms — music, games, reading, social activity — in one unified visual style.',
-      p2: 'All data runs on your own server and never passes through third parties. Your privacy is entirely in your hands.',
+      p2: 'Your data stays on your own server; conversations are sent to the model provider you configure.',
       l1: 'Self-hosted data, fully under your control',
       l2: 'Multi-platform data aggregation',
       l3: 'Customizable dashboard layout',
